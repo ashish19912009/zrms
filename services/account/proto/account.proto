@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package account;
+
+option go_package=  "./pb";
+
+// Message representing an Account in the system
+message Account {
+    string id           = 1;
+    string mobile_no    = 2;
+    string name         = 3;
+    string role         = 4;
+    string created_at   = 5; 
+}
+
+// POST /accounts -> Request
+message PostAccountRequest {
+    string mobile_no    = 1;
+    string name         = 2;
+    string role         = 3;
+}
+
+//-> Response
+message PostAccountResponse {
+    Account account = 1;
+}
+
+//PUT /account/:id -> Request
+message UpdateAccountRequest {
+    string id           = 1;
+    string mobile_no    = 2;
+    string name         = 3;
+    string role         = 4;
+}
+
+//-> Response
+message UpdateAccountResponse {
+    Account account     = 1;
+}
+
+// GET /account/:id -> Request
+message GetAccountRequest {
+    string id           = 1;
+}
+
+//-> Response
+message GetAccountResponse {
+    Account account     = 1;
+}
+
+//GET /account?skip0&take=100
+message GetAccountsRequest {
+    uint64  skip        = 1;
+    uint64  take        = 2;
+}
+
+//-> Response
+message GetAccountsResponse {
+    repeated Account accounts = 1;
+}
+
+service AccountService {
+    rpc PostAccount(PostAccountRequest)     returns (PostAccountResponse);
+    rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse);
+    rpc GetAccount(GetAccountRequest)       returns (GetAccountResponse);
+    rpc GetAccounts(GetAccountsRequest)     returns (GetAccountsResponse);
+}
