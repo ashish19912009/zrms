@@ -1,0 +1,1 @@
+DELETE FROM accounts WHERE id IN ('3b37e99d-77b7-470f-92a4-0a37007f13a1');

@@ -4,20 +4,32 @@ package account;
 
 option go_package=  "./pb";
 
+/**
+ export PATH="$PATH:$(go env GOPATH)/bin"
+ protoc --go_out=../ --go-grpc_out=../ account.proto
+**/
+
 // Message representing an Account in the system
 message Account {
     string id           = 1;
-    string mobile_no    = 2;
-    string name         = 3;
-    string role         = 4;
-    string created_at   = 5; 
+    string emp_id       = 2;
+    string mobile_no    = 3;
+    string name         = 4;
+    string role         = 5;
+    string status       = 6;
+    string created_at   = 7;
+    string updated_at   = 8; 
+    string deleted_at   = 9;
 }
 
 // POST /accounts -> Request
 message PostAccountRequest {
-    string mobile_no    = 1;
-    string name         = 2;
-    string role         = 3;
+    string id           = 1;
+    string emp_id       = 2;
+    string mobile_no    = 3;
+    string name         = 4;
+    string role         = 5;
+    string status       = 6;
 }
 
 //-> Response
@@ -28,9 +40,11 @@ message PostAccountResponse {
 //PUT /account/:id -> Request
 message UpdateAccountRequest {
     string id           = 1;
-    string mobile_no    = 2;
-    string name         = 3;
-    string role         = 4;
+    string emp_id       = 2;
+    string mobile_no    = 3;
+    string name         = 4;
+    string role         = 5;
+    string status       = 6;
 }
 
 //-> Response
