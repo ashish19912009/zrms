@@ -23,7 +23,7 @@ message Account {
 }
 
 // POST /accounts -> Request
-message PostAccountRequest {
+message CreateAccountRequest {
     string id           = 1;
     string emp_id       = 2;
     string mobile_no    = 3;
@@ -33,7 +33,7 @@ message PostAccountRequest {
 }
 
 //-> Response
-message PostAccountResponse {
+message CreateAccountResponse {
     Account account = 1;
 }
 
@@ -53,12 +53,12 @@ message UpdateAccountResponse {
 }
 
 // GET /account/:id -> Request
-message GetAccountRequest {
+message GetAccountByIDRequest {
     string id           = 1;
 }
 
 //-> Response
-message GetAccountResponse {
+message GetAccountByIDResponse {
     Account account     = 1;
 }
 
@@ -74,8 +74,8 @@ message GetAccountsResponse {
 }
 
 service AccountService {
-    rpc PostAccount(PostAccountRequest)     returns (PostAccountResponse);
-    rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse);
-    rpc GetAccount(GetAccountRequest)       returns (GetAccountResponse);
-    rpc GetAccounts(GetAccountsRequest)     returns (GetAccountsResponse);
+    rpc CreateAccount(CreateAccountRequest)     returns (CreateAccountResponse);
+    rpc UpdateAccount(UpdateAccountRequest)     returns (UpdateAccountResponse);
+    rpc GetAccountByID(GetAccountByIDRequest)   returns (GetAccountByIDResponse);
+    rpc GetAccounts(GetAccountsRequest)         returns (GetAccountsResponse);
 }

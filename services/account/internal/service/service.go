@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
+	"github.com/ashish19912009/zrms/services/account/internal/validations"
 )
 
 /*
@@ -21,6 +24,7 @@ Handle errors properly.
 
 Return structured responses.
 */
+// mockery --name=AccountService --dir=services/account/internal/service --output=services/account/internal/service/mocks --outpkg=mocks
 
 // AccountService defines business logic for accounts
 type AccountService interface {
@@ -42,8 +46,11 @@ func NewAccountService(repo repository.Repository) AccountService {
 
 // CreateAccount adds a new account
 func (s *accountService) CreateAccount(ctx context.Context, account *model.Account) (*model.Account, error) {
-	if account.MobileNo == "" || account.Name == "" {
-		return nil, fmt.Errorf("mobile no and name are required")
+	if s.repo == nil {
+		log.Fatal("repo is nil")
+	}
+	if err := validations.ValidateAccount(account); err != nil {
+		return nil, err
 	}
 
 	// Call repository to create account
@@ -52,9 +59,27 @@ func (s *accountService) CreateAccount(ctx context.Context, account *model.Accou
 
 // UpdateAccount modify an existing account
 func (s *accountService) UpdateAccount(ctx context.Context, account *model.Account) (*model.Account, error) {
+	if err := validations.ValidateAccountUpdate(account); err != nil {
+		return nil, err
+	}
 
-	if account.ID == "" {
-		return nil, fmt.Errorf("account ID is required")
+	existing, err := s.repo.GetAccountByID(ctx, account.ID)
+	if err != nil {
+		log.Fatalf("After req.MobileNo in service: '%s'\n", existing.MobileNo)
+		return nil, err
+	}
+
+	if account.Name == "" {
+		account.Name = existing.Name
+	}
+	if account.MobileNo == "" {
+		account.MobileNo = existing.MobileNo
+	}
+	if account.Role == "" {
+		account.Role = existing.Role
+	}
+	if account.Status == "" {
+		account.Status = existing.Status
 	}
 	return s.repo.UpdateAccount(ctx, account)
 }
@@ -64,7 +89,7 @@ func (s *accountService) GetAccountByID(ctx context.Context, id string) (*model.
 
 	//check if id exist or not
 	if id == "" {
-		return nil, fmt.Errorf("id can't be empty")
+		return nil, errors.New(validations.ErrAccountIDRequired.Error())
 	}
 	return s.repo.GetAccountByID(ctx, id)
 }

@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 
+	config "github.com/ashish19912009/zrms/services/account/config/account_config"
 	"github.com/ashish19912009/zrms/services/account/internal/handler"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/service"
@@ -47,6 +48,7 @@ func connectDB() (*sql.DB, error) {
 
 func main() {
 	loadEnv()
+	config.LoadConfig()
 	db, err := connectDB()
 	if err != nil {
 		log.Fatalf("DB error: %v", err)
