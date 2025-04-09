@@ -9,9 +9,13 @@ import (
 
 	"github.com/ashish19912009/services/auth/internal/constants"
 	"github.com/ashish19912009/services/auth/internal/logger"
+	"github.com/ashish19912009/services/auth/internal/mapper"
+	"github.com/ashish19912009/services/auth/internal/models"
 	"github.com/ashish19912009/services/auth/internal/repository"
 	"github.com/ashish19912009/services/auth/internal/token"
 	"github.com/ashish19912009/services/auth/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type AuthService interface {
@@ -25,20 +29,41 @@ type authService struct {
 	tokenManager token.TokenManager
 	tokenRepo    repository.TokenRepository
 	userRepo     repository.UserRepository
+	accessTTL    time.Duration
+	refreshTTL   time.Duration
 }
 
-func NewAuthSerice(tokenManager token.TokenManager, tokenRepo repository.TokenRepository, userRepo repository.UserRepository) AuthService {
+func NewAuthService(tokenManager token.TokenManager, tokenRepo repository.TokenRepository, userRepo repository.UserRepository) AuthService {
+	accessTokenTime, refreshTokenTime := getTokenTimer(constants.EnvVariable.ACCESS_TOKEN_TTL, constants.EnvVariable.REFRESH_TOKEN_TTL)
 	return &authService{
 		tokenManager: tokenManager,
 		tokenRepo:    tokenRepo,
 		userRepo:     userRepo,
+		accessTTL:    accessTokenTime,
+		refreshTTL:   refreshTokenTime,
 	}
 }
 
-func getTokenTimer() (time.Duration, time.Duration) {
+// Constructor for testing and flexibility
+func NewAuthServiceWithTTL(
+	tm token.TokenManager,
+	tr repository.TokenRepository,
+	ur repository.UserRepository,
+	accessTTL, refreshTTL time.Duration,
+) AuthService {
+	return &authService{
+		tokenManager: tm,
+		tokenRepo:    tr,
+		userRepo:     ur,
+		accessTTL:    accessTTL,
+		refreshTTL:   refreshTTL,
+	}
+}
+
+func getTokenTimer(ACCESS_TOKEN_TTL string, REFRESH_TOKEN_TTL string) (time.Duration, time.Duration) {
 	var defaultAccessTokenTimer time.Duration = 24 * time.Hour      // 24Hours
-	var defaultRefreshTokenTimer time.Duration = 24 * 7 * time.Hour // 24Hours
-	accessTokenTimer, err := time.ParseDuration(os.Getenv(constants.EnvVariable.ACCESS_TOKEN_TIME))
+	var defaultRefreshTokenTimer time.Duration = 24 * 7 * time.Hour // 7 Days
+	accessTokenTimer, err := time.ParseDuration(os.Getenv(ACCESS_TOKEN_TTL))
 	if err != nil {
 		fmt.Printf("Can't convert env access token timer: %v\n", err)
 		accessTokenTimer = defaultAccessTokenTimer * time.Hour
@@ -46,7 +71,7 @@ func getTokenTimer() (time.Duration, time.Duration) {
 	if accessTokenTimer == 0 {
 		accessTokenTimer = defaultAccessTokenTimer * time.Hour
 	}
-	refreshTokenTimer, err := time.ParseDuration(os.Getenv(constants.EnvVariable.REFRESH_TOKEN_TIME))
+	refreshTokenTimer, err := time.ParseDuration(os.Getenv(REFRESH_TOKEN_TTL))
 	if err != nil {
 		fmt.Printf("Can't convert env refresh token timer: %v\n", err)
 		refreshTokenTimer = defaultRefreshTokenTimer * time.Hour
@@ -58,7 +83,8 @@ func getTokenTimer() (time.Duration, time.Duration) {
 }
 
 func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	if req.LoginId == "" || req.Password == "" || req.AccountType == "" {
+	input := mapper.LoginRequest(req)
+	if input.LoginID == "" || input.Password == "" || input.AccountType == "" {
 		logger.Error(constants.ValidationMissingCredentials, nil, map[string]interface{}{
 			"method": constants.Methods.Login,
 		})
@@ -66,16 +92,18 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	}
 
 	// Getting user information from database
-	userDetails, err := s.userRepo.GetUser(ctx, req.LoginId, req.AccountType)
+	var userDetails *models.User
+	userDetails, err := s.userRepo.GetUser(ctx, input.LoginID, input.AccountType)
 	if err != nil {
 		return nil, errors.New(constants.WrongUsernamePassword)
 	}
-
+	if userDetails == nil {
+		return nil, status.Error(codes.Internal, constants.UserDataMissing)
+	}
 	if userDetails.Password != "" {
-		isCorrectPassword := s.userRepo.VerifyPassword(userDetails.Password, req.Password)
+		isCorrectPassword := s.userRepo.VerifyPassword(userDetails.Password, input.Password)
 		if isCorrectPassword {
-			accessTokenTime, refreshTokenTime := getTokenTimer()
-			accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.EmployeeID, userDetails.AccountID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, accessTokenTime)
+			accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.EmployeeID, userDetails.AccountID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, s.accessTTL)
 			if err != nil {
 				logger.Error(constants.FailedToGenerateAct, err, map[string]interface{}{
 					"method": constants.Methods.Login,
@@ -84,7 +112,7 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 				return nil, fmt.Errorf(constants.FailedToGenerateAct, err)
 			}
 
-			refreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, refreshTokenTime)
+			refreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, s.refreshTTL)
 			if err != nil {
 				logger.Error(constants.FailedToGenerateRsh, err, map[string]interface{}{
 					"method": constants.Methods.Login,
@@ -95,14 +123,14 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 
 			// Store refresh token and access token in "in memory DB"
 
-			err = s.tokenRepo.StoreToken(ctx, constants.Access_token, userDetails.AccountID, accessToken, accessTokenTime)
+			err = s.tokenRepo.StoreToken(ctx, constants.Access_token, userDetails.AccountID, accessToken, s.accessTTL)
 			if err != nil {
 				logger.Error(constants.FailedToStoreRshToken, err, map[string]interface{}{
 					"method": constants.Methods.Login,
 				})
 				return nil, fmt.Errorf("%s: %w", constants.FailedToStoreRshToken, err)
 			}
-			err = s.tokenRepo.StoreToken(ctx, constants.Refresh_token, userDetails.AccountID, refreshToken, refreshTokenTime)
+			err = s.tokenRepo.StoreToken(ctx, constants.Refresh_token, userDetails.AccountID, refreshToken, s.refreshTTL)
 			if err != nil {
 				logger.Error(constants.FailedToStoreRshToken, err, map[string]interface{}{
 					"method": constants.Methods.Login,
@@ -115,16 +143,7 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 				"user_id": userDetails.AccountID + "_" + userDetails.EmployeeID,
 			})
 
-			return &pb.LoginResponse{
-				AccountId:    userDetails.AccountID,
-				EmployeeId:   userDetails.EmployeeID,
-				AccountType:  userDetails.AccountType,
-				Name:         userDetails.Name,
-				MobileNo:     userDetails.MobileNo,
-				Permissions:  userDetails.Permissions,
-				AccessToken:  accessToken,
-				RefreshToken: refreshToken,
-			}, nil
+			return mapper.LoginResponse(userDetails, accessToken, refreshToken), nil
 		}
 		return nil, fmt.Errorf(constants.WrongUsernamePassword)
 	}
@@ -136,14 +155,15 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 }
 
 func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginResponse, error) {
-	if req.RefreshToken == "" {
+	var input = mapper.RefreshTokenRequest(req)
+	if input.RefreshToken == "" {
 		logger.Error(constants.AuthRefreshRequired, nil, map[string]interface{}{
 			"method": constants.Methods.RefreshToken,
 		})
 		return nil, fmt.Errorf(constants.AuthRefreshRequired)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(req.RefreshToken)
+	claims, err := s.tokenManager.VerifyToken(input.RefreshToken)
 	if err != nil {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.RefreshToken,
@@ -152,7 +172,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	}
 
 	// Check if refresh token exists in in_memory
-	exists, err := s.tokenRepo.CheckToken(ctx, constants.Refresh_token, req.AccountId, req.RefreshToken)
+	exists, err := s.tokenRepo.CheckToken(ctx, constants.Refresh_token, input.AccountID, input.RefreshToken)
 	if err != nil || !exists {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.RefreshToken,
@@ -161,17 +181,20 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 		return nil, fmt.Errorf("%s: %w", constants.AuthRshTokenInvalid, err)
 	}
 	if exists {
-		userInfoFromToken, err := s.tokenManager.VerifyToken(req.RefreshToken)
+		userInfoFromToken, err := s.tokenManager.VerifyToken(input.RefreshToken)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", constants.AuthRefreshFailure, err)
 		}
 		// Getting user information from database
-		userDetails, err := s.userRepo.GetUser(ctx, userInfoFromToken.AccountID, userInfoFromToken.AccountType)
+		var userDetails *models.User
+		userDetails, err = s.userRepo.GetUser(ctx, userInfoFromToken.AccountID, userInfoFromToken.AccountType)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", constants.WrongUsernamePassword, err)
 		}
-		accessTokenTime, refreshTokenTime := getTokenTimer()
-		accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.AccountID, userDetails.EmployeeID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, accessTokenTime)
+		if userDetails == nil {
+			return nil, status.Error(codes.Internal, constants.UserDataMissing)
+		}
+		accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.AccountID, userDetails.EmployeeID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, s.accessTTL)
 		if err != nil {
 			logger.Error(constants.FailedToGenerateAct, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
@@ -180,7 +203,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 			return nil, fmt.Errorf(constants.FailedToGenerateAct, err)
 		}
 
-		newRefreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, refreshTokenTime)
+		newRefreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, s.refreshTTL)
 		if err != nil {
 			logger.Error(constants.FailedToGenerateRsh, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
@@ -190,14 +213,14 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 
 		// Update refresh token in Redis
 		// make a abstraction layer to store token in any in memory DB i.e. Redis, memchached, Dragonfly
-		err = s.tokenRepo.StoreToken(ctx, constants.Access_token, userDetails.AccountID, accessToken, accessTokenTime)
+		err = s.tokenRepo.StoreToken(ctx, constants.Access_token, userDetails.AccountID, accessToken, s.accessTTL)
 		if err != nil {
 			logger.Error(constants.FailedToStoreRshToken, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
 			})
 			return nil, err
 		}
-		err = s.tokenRepo.StoreToken(ctx, constants.Refresh_token, userDetails.AccountID, newRefreshToken, refreshTokenTime)
+		err = s.tokenRepo.StoreToken(ctx, constants.Refresh_token, userDetails.AccountID, newRefreshToken, s.refreshTTL)
 		if err != nil {
 			logger.Error(constants.FailedToStoreRshToken, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
@@ -210,23 +233,21 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 			"user":   claims.EmployeeID,
 		})
 
-		return &pb.LoginResponse{
-			AccessToken:  accessToken,
-			RefreshToken: newRefreshToken,
-		}, nil
+		return mapper.LoginResponse(userDetails, accessToken, newRefreshToken), nil
 	}
 	return nil, errors.New("couldn't refresh token")
 }
 
 func (s *authService) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
-	if req.AccessToken == "" {
+	input := mapper.VerifyTokenRequest(req)
+	if input.AccessToken == "" {
 		logger.Error(constants.AuthAccessRequired, nil, map[string]interface{}{
 			"method": constants.Methods.ValidateToken,
 		})
 		return nil, fmt.Errorf(constants.AuthAccessRequired)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(req.AccessToken)
+	claims, err := s.tokenManager.VerifyToken(input.AccessToken)
 	if err != nil {
 		logger.Error(constants.AuthTokenVeriFailed, err, map[string]interface{}{
 			"method": constants.Methods.ValidateToken,
@@ -239,23 +260,24 @@ func (s *authService) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequ
 		"user":   claims.EmployeeID,
 	})
 
-	return &pb.VerifyTokenResponse{
-		EmployeeId:  claims.EmployeeID,
-		MobileNo:    claims.MobileNo,
+	return mapper.VerifyTokenResponse(&models.User{
+		AccountID:   claims.AccountID,
+		AccountType: claims.AccountType,
+		Role:        claims.Role,
 		Permissions: claims.Permissions,
-		IsValid:     true,
-	}, nil
+	}, true), nil
 }
 
 func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	if req.RefreshToken == "" {
+	input := mapper.LogoutRequestInput(req)
+	if input.RefreshToken == "" {
 		logger.Error(constants.ErrMissingRefreshToken, nil, map[string]interface{}{
 			"method": constants.Methods.Logout,
 		})
 		return nil, fmt.Errorf(constants.ErrMissingRefreshToken)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(req.RefreshToken)
+	claims, err := s.tokenManager.VerifyToken(input.RefreshToken)
 	if err != nil {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.Logout,
@@ -285,5 +307,5 @@ func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Lo
 		"user":   claims.EmployeeID,
 	})
 
-	return &pb.LogoutResponse{Success: true}, nil
+	return mapper.LogoutResponse(true), nil
 }

@@ -1,0 +1,40 @@
+env: "development"
+port: "50051"
+
+jwtPrivateKeyPath: "../certs/private_key.pem"
+jwtPublicKeyPath: "../certs/public_key.pem"
+storage:
+  type: ""  # Uses the custom created in-memory store lightning
+  # Optional configuration for LightningDB
+  lightning:
+    initial_capacity: 1000  # Initial size hint for the map
+    max_items: 10000    # Fallback to Redis if exceeded
+    cleanup_interval: "2880m"  # How often to run expiration cleanup - default 48 hrs
+
+  memcached:
+    addresses:
+      - "localhost:11211"
+    timeout: "5s"
+    max_idle_conns: 10
+
+  redis:
+    address: "localhost:6379"
+    password: ""
+    db: 0
+    pool_size: 10
+    read_timeout: "5s"
+    write_timeout: "5s"
+    ttl: "48h"    # Default expiration
+
+  
+  dragonfly:
+    address: "localhost:6379"
+    password: "your-secret-password"  # Optional
+    pool_size: 10
+    timeout: "5s"
+    ttl: "48h"  # Default expiration
+  
+  # badger:
+  #   dir: "./badger"
+  #   sync_writes: false
+  #   logger: false
