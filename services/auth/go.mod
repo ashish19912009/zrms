@@ -3,6 +3,7 @@ module github.com/ashish19912009/services/auth
 go 1.23.5
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/golang-jwt/jwt/v5 v5.2.2
@@ -39,6 +40,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect

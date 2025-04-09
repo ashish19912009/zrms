@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -108,6 +109,10 @@ func TestCreateAndFetchAccount_E2E(t *testing.T) {
 		EmpId:    "EMP-E2E-002",
 	}
 
+	//set authorization token
+	md := metadata.New(map[string]string{"authorization": "Bearer valid-token"})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
+
 	// Create Account
 	createResp, err := client.CreateAccount(ctx, req)
 	assert.NoError(t, err)
@@ -134,6 +139,10 @@ func TestUpdateAccount_E2E(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, createResp)
 
+	//set authorization token
+	md := metadata.New(map[string]string{"authorization": "Bearer valid-token"})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
+
 	// Step 2: Update name and role
 	updateResp, err := client.UpdateAccount(ctx, &pb.UpdateAccountRequest{
 		Id:   createResp.Account.Id,
@@ -147,6 +156,10 @@ func TestUpdateAccount_E2E(t *testing.T) {
 
 func TestGetAccountByID_E2E(t *testing.T) {
 	ctx := context.Background()
+
+	//set authorization token
+	md := metadata.New(map[string]string{"authorization": "Bearer valid-token"})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
 
 	// Create
 	createResp, err := client.CreateAccount(ctx, &pb.CreateAccountRequest{
@@ -169,6 +182,10 @@ func TestGetAccountByID_E2E(t *testing.T) {
 
 func TestListAccounts_E2E(t *testing.T) {
 	ctx := context.Background()
+
+	//set authorization token
+	md := metadata.New(map[string]string{"authorization": "Bearer valid-token"})
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
 
 	// Add 3 accounts (feel free to use a loop)
 	for i := 1; i <= 3; i++ {

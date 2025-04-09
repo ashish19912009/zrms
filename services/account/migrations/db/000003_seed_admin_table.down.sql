@@ -1,1 +1,0 @@
-DELETE FROM accounts WHERE mobile_no IN ('mobile_no');

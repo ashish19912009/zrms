@@ -146,6 +146,10 @@ type StoreManager struct {
 	store InMemoryStore
 }
 
+func (sm *StoreManager) Store() InMemoryStore {
+	return sm.store
+}
+
 // NewStoreManager initializes the store based on the config
 func NewStoreManager(configPath string) (*StoreManager, error) {
 	config, err := LoadConfig(configPath)

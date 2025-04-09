@@ -73,7 +73,19 @@ message GetAccountsResponse {
     repeated Account accounts = 1;
 }
 
+// -> /login
+message LoginRequest {
+    string mobile_no    = 1;
+    string employee_id  = 2;
+}
+
+//-> Response
+message LoginResponse{
+    string access_token = 1;
+}
+
 service AccountService {
+    rpc Login(LoginRequest)                     returns (LoginResponse);
     rpc CreateAccount(CreateAccountRequest)     returns (CreateAccountResponse);
     rpc UpdateAccount(UpdateAccountRequest)     returns (UpdateAccountResponse);
     rpc GetAccountByID(GetAccountByIDRequest)   returns (GetAccountByIDResponse);

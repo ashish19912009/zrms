@@ -8,23 +8,12 @@ import (
 
 	"github.com/ashish19912009/services/auth/internal/constants"
 	"github.com/ashish19912009/services/auth/internal/logger"
+	"github.com/ashish19912009/services/auth/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	AccountID   string
-	EmployeeID  string
-	AccountType string
-	Name        string
-	MobileNo    string
-	Password    string
-	Role        string
-	Permissions []string
-	Status      string
-}
-
 type UserRepository interface {
-	GetUser(ctx context.Context, loginID_accountID string, accountType string) (*User, error)
+	GetUser(ctx context.Context, loginID_accountID string, accountType string) (*models.User, error)
 	VerifyPassword(hashedPassword, password string) bool
 }
 
@@ -38,37 +27,45 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	}
 }
 
-func (r *userRepository) GetUser(ctx context.Context, loginID_accountID string, accountType string) (*User, error) {
-	if loginID_accountID == "" || accountType == "" {
+func (r *userRepository) GetUser(ctx context.Context, indentifier string, accountType string) (*models.User, error) {
+	if indentifier == "" || accountType == "" {
 		logger.Error(constants.CredentialMissing, nil, map[string]interface{}{
 			"method":       constants.Methods.GetUser,
-			"login_id":     loginID_accountID,
+			"login_id":     indentifier,
 			"account_type": accountType,
 		})
 		return nil, fmt.Errorf(constants.CredentialMissing)
 	}
 
-	query := "SELECT account_id, employee_id, account_type, name, mobile_no, password, role, permissions, status FROM accounts WHERE (login_id = $1 || account_id = $1) AND account_type = $2 AND deleted_at IS NULL"
-	row := r.db.QueryRowContext(ctx, query, loginID_accountID, accountType)
+	query := "SELECT account_id, employee_id, account_type, name, mobile_no, password, role, permissions, status FROM accounts WHERE (login_id = $1 OR account_id = $1) AND account_type = $2 AND deleted_at IS NULL"
+	row := r.db.QueryRowContext(ctx, query, indentifier, accountType)
 
-	var user User
-	if err := row.Scan(&user.AccountID, &user.AccountType, &user.Name, &user.MobileNo, &user.Password, &user.Role, &user.Permissions, &user.Status); err != nil {
+	var user models.User
+	if err := row.Scan(
+		&user.AccountID,
+		&user.EmployeeID,
+		&user.AccountType,
+		&user.Name,
+		&user.MobileNo,
+		&user.Password,
+		&user.Role,
+		&user.Permissions,
+		&user.Status); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			logger.Warn(constants.ErrUserNotFound, map[string]interface{}{
 				"method":       constants.Methods.GetUser,
-				"login_id":     loginID_accountID,
+				"login_id":     indentifier,
 				"account_type": accountType,
 			})
-			return nil, errors.New(constants.ErrUserNotFound)
+			return nil, fmt.Errorf("%s: %w", constants.ErrUserNotFound, err)
 		}
 		logger.Error(constants.DBQueryFailed, err, map[string]interface{}{
 			"method":       constants.Methods.GetUser,
-			"login_id":     loginID_accountID,
+			"login_id":     indentifier,
 			"account_type": accountType,
 		})
-		return nil, errors.New(constants.DBQueryFailed)
+		return nil, fmt.Errorf("%s: %w", constants.DBQueryFailed, err)
 	}
-
 	logger.Info(constants.UserFetchedSuccessful, map[string]interface{}{
 		"method":       constants.Methods.GetUser,
 		"account_id":   user.AccountID,

@@ -2,6 +2,8 @@ package token
 
 import (
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
@@ -9,23 +11,14 @@ import (
 
 	"github.com/ashish19912009/services/auth/internal/constants"
 	"github.com/ashish19912009/services/auth/internal/logger"
+	"github.com/ashish19912009/services/auth/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-type Claims struct {
-	EmployeeID  string   `json:"employee_id"`
-	AccountID   string   `json:"account_id"`
-	AccountType string   `json:"account_type"`
-	Name        string   `json:"name"`
-	MobileNo    string   `json:"mobile_no"`
-	Permissions []string `json:"permissions"`
-	jwt.RegisteredClaims
-}
 
 type TokenManager interface {
 	GenerateAccessToken(accountID, employeeID, mobileNo, accountType, name string, permissions []string, duration time.Duration) (string, error)
 	GenerateRefreshToken(accountID, accountType string, permissions []string, duration time.Duration) (string, error)
-	VerifyToken(tokenString string) (*Claims, error)
+	VerifyToken(tokenString string) (*models.AuthClaims, error)
 }
 
 type jwtManager struct {
@@ -35,13 +28,54 @@ type jwtManager struct {
 	audience   string
 }
 
-func NewjwtManager(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) *jwtManager {
+func NewjwtManager(privateKeyPath, publicKeyPath string) (*jwtManager, error) {
+	privateKey, err := loadPrivateKeyFromFile(privateKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKey, err := loadPublicKeyFromFile(publicKeyPath)
+	if err != nil {
+		return nil, err
+	}
 	return &jwtManager{
 		issuer:     os.Getenv("JWT_ISSUER"),
 		audience:   os.Getenv("JWT_AUDIENCE"),
 		privateKey: privateKey,
 		publicKey:  publicKey,
+	}, nil
+}
+
+func loadPrivateKeyFromFile(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return nil, errors.New("invalid private key data")
+	}
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+func loadPublicKeyFromFile(path string) (*rsa.PublicKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, errors.New("invalid public key data")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("not an RSA public key")
+	}
+	return rsaPub, nil
 }
 
 // GenerateToken creates a new access token
@@ -52,7 +86,7 @@ func (j *jwtManager) GenerateAccessToken(employeeID, accountID, mobileNo, accoun
 		})
 		return "", fmt.Errorf(constants.TokenParamMissing)
 	}
-	claims := Claims{
+	claims := models.AuthClaims{
 		EmployeeID:  employeeID,
 		AccountID:   accountID,
 		AccountType: accountType,
@@ -96,7 +130,7 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, permiss
 		return "", fmt.Errorf(constants.TokenParamMissing)
 	}
 
-	claims := Claims{
+	claims := models.AuthClaims{
 		AccountID:   accountID,
 		AccountType: accountType,
 		Permissions: permissions,
@@ -129,8 +163,8 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, permiss
 
 // ValidateToken verifies the signature and expiration of an access token
 
-func (j *jwtManager) VerifyToken(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+func (j *jwtManager) VerifyToken(tokenString string) (*models.AuthClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &models.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New(constants.ErrUnexpectedSigningMethod)
 		}
@@ -141,7 +175,7 @@ func (j *jwtManager) VerifyToken(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*models.AuthClaims)
 	if !ok || !token.Valid {
 		return nil, errors.New(constants.ErrInvalidToken)
 	}
