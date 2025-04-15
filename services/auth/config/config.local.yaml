@@ -1,0 +1,34 @@
+env: "development"
+port: "50051"
+
+jwtPrivateKeyPath: "../../certs/private_key.pem"
+jwtPublicKeyPath: "../../certs/public_key.pem"
+
+type: "lightning"  # Uses Lightning by default
+
+lightning:
+  initial_capacity: 1000
+  max_items: 10000
+  cleanup_interval: "2880m"
+
+memcached:
+  addresses:
+    - "localhost:11211"
+  timeout: "5s"
+  max_idle_conns: 10
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0
+  pool_size: 10
+  read_timeout: "5s"
+  write_timeout: "5s"
+  ttl: "48h"
+
+dragonfly:
+  address: "localhost:6379"
+  password: "your-secret-password"
+  pool_size: 10
+  timeout: "5s"
+  ttl: "48h"

@@ -21,9 +21,14 @@ service AuthService {
 
 // Login request with basic credentials
 message LoginRequest {
-    string login_id     = 1; // Can be mobile_no or user-defined login ID
+    string login_id     = 1; // Can be default login_id or user-updated login_id
     string account_type = 2; // Defines role (e.g., delivery_partner, food_packer)
     string password     = 3;
+}
+
+message Permission {
+    string resource = 1;    // e.g., "delivery"
+    repeated string actions = 2; // e.g., ["accept_order", "mark_delivered"]
 }
 
 // Login response with access token
@@ -35,7 +40,7 @@ message LoginResponse {
     string mobile_no     = 5;
     string access_token  = 6;
     string refresh_token = 7;
-    repeated string permissions = 8; // List of permissions the user can have e.g. "delivery:accept_order", "delivery:mark_delivered", "packing:view_orders", "admin:manage_users"
+    repeated Permission permissions = 8; // List of permissions
 }
 
 // Request to refresh token (used by interceptors)
@@ -51,10 +56,11 @@ message VerifyTokenRequest {
 
 // Response contains token info if valid
 message VerifyTokenResponse {
-    string employee_id          = 1;
-    string mobile_no            = 2;
-    repeated string permissions = 3;
-    bool is_valid               = 4;
+    string account_id           = 1;
+    string account_type         = 2;
+    string role                 = 3;
+    repeated string permissions = 4;
+    bool is_valid               = 5;
 }
 
 // Request to logout (used by interceptors)

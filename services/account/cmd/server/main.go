@@ -2,13 +2,17 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"time"
 
 	config "github.com/ashish19912009/zrms/services/account/config/account_config"
+	"github.com/ashish19912009/zrms/services/account/internal/auth"
 	"github.com/ashish19912009/zrms/services/account/internal/handler"
+	"github.com/ashish19912009/zrms/services/account/internal/middleware"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/service"
 	"github.com/ashish19912009/zrms/services/account/pb"
@@ -27,7 +31,7 @@ func loadEnv() {
 	if err := godotenv.Load(envFile); err != nil {
 		log.Printf("No %s file found, continuing without it", envFile)
 	}
-	log.Printf("🌍 Loaded %s environment", appEnv)
+	log.Printf("🌍 Loaded %s environment - %s", appEnv, envFile)
 }
 
 func connectDB() (*sql.DB, error) {
@@ -46,6 +50,13 @@ func connectDB() (*sql.DB, error) {
 	return db, nil
 }
 
+func mockValidateToken(token string) (map[string]interface{}, error) {
+	if token == "valid-token" {
+		return map[string]interface{}{"role": "admin"}, nil
+	}
+	return nil, errors.New("unauthorized")
+}
+
 func main() {
 	loadEnv()
 	config.LoadConfig()
@@ -57,7 +68,8 @@ func main() {
 
 	repo := repository.NewRepository(db)
 	svc := service.NewAccountService(repo)
-	grpcHandler := handler.NewGRPCHandler(svc)
+	jwtManager := auth.NewJWTManager("secret-key", time.Hour)
+	grpcHandler := handler.NewGRPCHandler(svc, jwtManager)
 
 	grpcPort := os.Getenv("GRPC_PORT")
 	if grpcPort != "" {
@@ -69,7 +81,11 @@ func main() {
 		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	authInterceptor := middleware.NewAuthInterceptor("my-secret-key", "admin", "superadmin")
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(authInterceptor.Unary()),
+	)
 	pb.RegisterAccountServiceServer(grpcServer, grpcHandler)
 
 	log.Printf("gRPC server running on port %s in %s enviroment", grpcPort, os.Getenv("APP_ENV"))

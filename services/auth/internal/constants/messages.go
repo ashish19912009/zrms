@@ -3,12 +3,12 @@ package constants
 // List of env variables
 var EnvVariable = struct {
 	IN_MEMORY_STORE_TYPE string
-	ACCESS_TOKEN_TIME    string
-	REFRESH_TOKEN_TIME   string
+	ACCESS_TOKEN_TTL     string
+	REFRESH_TOKEN_TTL    string
 }{
-	IN_MEMORY_STORE_TYPE: "IN_MEMORY_STORE_TYPE",
-	ACCESS_TOKEN_TIME:    "ACCESS_TOKEN_TIME",
-	REFRESH_TOKEN_TIME:   "REFRESH_TOKEN_TIME",
+	IN_MEMORY_STORE_TYPE: "type",
+	ACCESS_TOKEN_TTL:     "ACCESS_TOKEN_TTL",
+	REFRESH_TOKEN_TTL:    "REFRESH_TOKEN_TTL",
 }
 
 // List of Methods
@@ -17,7 +17,7 @@ var Methods = struct {
 	Logout               string
 	AccessToken          string
 	RefreshToken         string
-	ValidateToken        string
+	VerifyToken          string
 	StoreToken           string
 	CheckToken           string
 	DeleteToken          string
@@ -34,7 +34,7 @@ var Methods = struct {
 	Validate:             "Validate",
 	AccessToken:          "AccessToken",
 	RefreshToken:         "RefreshToken",
-	ValidateToken:        "ValidateToken",
+	VerifyToken:          "ValidateToken",
 	StoreToken:           "StoreToken",
 	CheckToken:           "CheckToken",
 	DeleteToken:          "DeleteToken",
@@ -127,6 +127,9 @@ const (
 	GRPCInternalError   = "internal gRPC error occurred"
 	GRPCUnauthorized    = "gRPC request unauthorized"
 	GRPCInvalidArgument = "invalid gRPC argument provided"
+
+	// service Layer
+	UserDataMissing = "user data missing"
 
 	// Repository Layer
 	MobileNoRequired          = "mobile no required"

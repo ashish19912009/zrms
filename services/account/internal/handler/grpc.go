@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ashish19912009/zrms/services/account/internal/auth"
 	"github.com/ashish19912009/zrms/services/account/internal/helper"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/service"
@@ -16,10 +17,14 @@ import (
 type GRPCHandler struct {
 	pb.UnimplementedAccountServiceServer
 	accountService service.AccountService
+	jwtManager     *auth.JWTManager
 }
 
-func NewGRPCHandler(accountService service.AccountService) *GRPCHandler {
-	return &GRPCHandler{accountService: accountService}
+func NewGRPCHandler(accountService service.AccountService, jwtManager *auth.JWTManager) *GRPCHandler {
+	return &GRPCHandler{
+		accountService: accountService,
+		jwtManager:     jwtManager,
+	}
 }
 
 func formatDatesToString(acc *model.Account) (createdAt, updatedAt string) {
@@ -30,6 +35,33 @@ func formatDatesToString(acc *model.Account) (createdAt, updatedAt string) {
 		updatedAt = helper.FormatTimePtr(acc.UpdatedAt)
 	}
 	return
+}
+
+func (h *GRPCHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	// TODO: Validate the user (mock for now)
+	if req.MobileNo == "" || req.EmployeeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "mobile_no and employee_id are required")
+	}
+
+	// simulate user verification (later fetch from DB)
+	if req.MobileNo != "9999999999" || req.EmployeeId != "EMP-MOCK-001" {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	// Generate JWT
+	token, err := h.jwtManager.Generate(&auth.Claims{
+		UserID:     "mock-user-id",
+		MobileNo:   req.MobileNo,
+		EmployeeID: req.EmployeeId,
+		Role:       "admin", // or fetch from DB
+	})
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
+	}
+	return &pb.LoginResponse{
+		AccessToken: token,
+	}, nil
 }
 
 func (h *GRPCHandler) CreateAccount(ctx context.Context, req *pb.CreateAccountRequest) (*pb.CreateAccountResponse, error) {
