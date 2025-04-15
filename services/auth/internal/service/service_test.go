@@ -19,12 +19,12 @@ type MockTokenManager struct {
 	mock.Mock
 }
 
-func (m *MockTokenManager) GenerateAccessToken(employeeID, accountID, mobileNo, accountType, name string, permissions []string, duration time.Duration) (string, error) {
+func (m *MockTokenManager) GenerateAccessToken(employeeID, accountID, mobileNo, accountType, name string, permissions models.PermissionsArray, duration time.Duration) (string, error) {
 	args := m.Called(employeeID, accountID, mobileNo, accountType, name, permissions, duration)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockTokenManager) GenerateRefreshToken(accountID, accountType string, permissions []string, duration time.Duration) (string, error) {
+func (m *MockTokenManager) GenerateRefreshToken(accountID, accountType string, permissions models.PermissionsArray, duration time.Duration) (string, error) {
 	args := m.Called(accountID, accountType, permissions, duration)
 	return args.String(0), args.Error(1)
 }
@@ -92,6 +92,17 @@ func TestLogin(t *testing.T) {
 		mockTokenManager := new(mockRepo.TokenManager)
 		authSvc := NewAuthServiceWithTTL(mockTokenManager, mockTokenRepo, mockUserRepo, accessTTL, refreshTTL)
 
+		mockPermissions := models.PermissionsArray{
+			{
+				UserAccount: models.UserAccountPermission{
+					Create: true,
+					Read:   true,
+					Update: true,
+					Delete: false,
+				},
+			},
+		}
+
 		mockUser := &models.User{
 			EmployeeID:  "E123",
 			AccountID:   "A123",
@@ -99,7 +110,7 @@ func TestLogin(t *testing.T) {
 			Name:        "Test User",
 			MobileNo:    "1234567890",
 			Password:    "hashedpassword",
-			Permissions: []string{"read", "write"},
+			Permissions: mockPermissions,
 			Status:      "active",
 		}
 
@@ -109,8 +120,8 @@ func TestLogin(t *testing.T) {
 		accessToken := "access-token"
 		refreshToken := "refresh-token"
 
-		mockTokenManager.On("GenerateAccessToken", mockUser.EmployeeID, mockUser.AccountID, mockUser.MobileNo, mockUser.AccountType, mockUser.Name, mockUser.Permissions, accessTTL).Return(accessToken, nil)
-		mockTokenManager.On("GenerateRefreshToken", mockUser.AccountID, mockUser.AccountType, mockUser.Permissions, refreshTTL).Return(refreshToken, nil)
+		mockTokenManager.On("GenerateAccessToken", mockUser.EmployeeID, mockUser.AccountID, mockUser.MobileNo, mockUser.AccountType, mockUser.Name, mockPermissions, accessTTL).Return(accessToken, nil)
+		mockTokenManager.On("GenerateRefreshToken", mockUser.AccountID, mockUser.AccountType, mockPermissions, refreshTTL).Return(refreshToken, nil)
 
 		mockTokenRepo.On("StoreToken", ctx, constants.Access_token, mockUser.AccountID, accessToken, accessTTL).Return(nil)
 		mockTokenRepo.On("StoreToken", ctx, constants.Refresh_token, mockUser.AccountID, refreshToken, refreshTTL).Return(nil)
@@ -123,8 +134,10 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, mockUser.AccountType, resp.AccountType)
 		assert.Equal(t, mockUser.Name, resp.Name)
 		assert.Equal(t, mockUser.MobileNo, resp.MobileNo)
-		//fix this later
-		//assert.ElementsMatch(t, mockUser.Permissions, resp.Permissions)
+
+		// ✅ Now properly check permissions
+		assert.Equal(t, mockPermissions, resp.Permissions)
+
 		assert.Equal(t, accessToken, resp.AccessToken)
 		assert.Equal(t, refreshToken, resp.RefreshToken)
 	})
@@ -202,12 +215,23 @@ func TestLogin(t *testing.T) {
 		mockUserRepo := new(MockUserRepository)
 		authSvc := NewAuthServiceWithTTL(mockTokenManager, mockTokenRepo, mockUserRepo, accessTTL, refreshTTL)
 
+		mockPermissions := models.PermissionsArray{
+			{
+				UserAccount: models.UserAccountPermission{
+					Create: true,
+					Read:   true,
+					Update: true,
+					Delete: false,
+				},
+			},
+		}
+
 		mockUser := &models.User{
 			EmployeeID:  "E123",
 			AccountID:   "A123",
 			AccountType: "standard",
 			Password:    "hashedpassword",
-			Permissions: []string{"read"},
+			Permissions: mockPermissions,
 			MobileNo:    "9876543210",
 			Name:        "TokenFail",
 		}
@@ -228,13 +252,22 @@ func TestLogin(t *testing.T) {
 		mockTokenRepo := new(MockTokenRepository)
 		mockUserRepo := new(MockUserRepository)
 		authSvc := NewAuthServiceWithTTL(mockTokenManager, mockTokenRepo, mockUserRepo, accessTTL, refreshTTL)
-
+		mockPermissions := models.PermissionsArray{
+			{
+				UserAccount: models.UserAccountPermission{
+					Create: true,
+					Read:   true,
+					Update: true,
+					Delete: false,
+				},
+			},
+		}
 		mockUser := &models.User{
 			EmployeeID:  "E123",
 			AccountID:   "A123",
 			AccountType: "standard",
 			Password:    "hashedpassword",
-			Permissions: []string{"read"},
+			Permissions: mockPermissions,
 			MobileNo:    "9876543210",
 			Name:        "StorageFail",
 		}
@@ -305,7 +338,16 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		Password:    "wrongpassword",
 		AccountType: "admin",
 	}
-
+	mockPermissions := models.PermissionsArray{
+		{
+			UserAccount: models.UserAccountPermission{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: false,
+			},
+		},
+	}
 	user := &models.User{
 		AccountID:   "acc123",
 		EmployeeID:  "emp123",
@@ -313,7 +355,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 		AccountType: "admin",
 		Name:        "Test User",
 		Password:    "$2a$10$HashedPassword", // hashed
-		Permissions: []string{"read", "write"},
+		Permissions: mockPermissions,
 	}
 
 	mockUserRepo.On("GetUser", mock.Anything, "testuser", "admin").Return(user, nil)

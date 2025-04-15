@@ -45,7 +45,11 @@ func TestGetUser(t *testing.T) {
 		rows := sqlmock.NewRows([]string{
 			"account_id", "employee_id", "account_type", "name", "mobile_no", "password", "role", "permissions", "status",
 		}).AddRow(
-			"acc-123", "emp-456", "admin", "Ashish", "9876543210", "hashedpass", "admin", []byte(`["read","write"]`), "active",
+			"acc-123", "emp-456", "admin", "Ashish", "9876543210", "hashedpass", "admin",
+			[]byte(`[
+				"{\"user_account\": {\"read\": true, \"write\": true, \"delete\": false}}"
+			]`),
+			"active",
 		)
 
 		mock.ExpectQuery("SELECT (.+) FROM accounts").
@@ -55,7 +59,13 @@ func TestGetUser(t *testing.T) {
 		user, err := repo.GetUser(ctx, "acc-123", "admin")
 		assert.NoError(t, err)
 		assert.Equal(t, "acc-123", user.AccountID)
-		assert.Equal(t, []string{"read", "write"}, []string(user.Permissions))
+
+		// Assert on permission struct values
+		require.Len(t, user.Permissions, 1)
+		assert.True(t, user.Permissions[0].UserAccount.Create)
+		assert.True(t, user.Permissions[0].UserAccount.Read)
+		assert.True(t, user.Permissions[0].UserAccount.Update)
+		assert.False(t, user.Permissions[0].UserAccount.Delete)
 	})
 
 	t.Run("Missing Credentials", func(t *testing.T) {

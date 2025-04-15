@@ -7,13 +7,13 @@ import (
 )
 
 type AuthClaims struct {
-	AccountID   string   `json:"account_id"`
-	EmployeeID  string   `json:"employee_id"`
-	AccountType string   `json:"account_type"`
-	Name        string   `json:"name"`
-	MobileNo    string   `json:"mobile_no"`
-	Role        string   `json:"role"`
-	Permissions []string `json:"permissions"`
+	AccountID   string           `json:"account_id"`
+	EmployeeID  string           `json:"employee_id"`
+	AccountType string           `json:"account_type"`
+	Name        string           `json:"name"`
+	MobileNo    string           `json:"mobile_no"`
+	Role        string           `json:"role"`
+	Permissions PermissionsArray `json:"permissions"`
 	jwt.RegisteredClaims
 }
 

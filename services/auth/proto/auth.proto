@@ -26,6 +26,11 @@ message LoginRequest {
     string password     = 3;
 }
 
+message Permission {
+    string resource = 1;    // e.g., "delivery"
+    repeated string actions = 2; // e.g., ["accept_order", "mark_delivered"]
+}
+
 // Login response with access token
 message LoginResponse {
     string employee_id   = 1;
@@ -35,7 +40,7 @@ message LoginResponse {
     string mobile_no     = 5;
     string access_token  = 6;
     string refresh_token = 7;
-    repeated string permissions = 8; // List of permissions the user can have e.g. "delivery:accept_order", "delivery:mark_delivered", "packing:view_orders", "admin:manage_users"
+    repeated Permission permissions = 8; // List of permissions
 }
 
 // Request to refresh token (used by interceptors)

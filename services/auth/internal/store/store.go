@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -82,13 +83,17 @@ func LoadConfig(path string) (*Config, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error(constants.FailedToParse, err, map[string]interface{}{"file_path": path})
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(file, &config); err != nil {
 		logger.Error(constants.FailedToParse, err, map[string]interface{}{"file_path": path})
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	if config.Type == "" {
+		return nil, fmt.Errorf("store config section is missing or nil in YAML file")
 	}
 
 	// Override with environment variable if set
@@ -151,11 +156,11 @@ func (sm *StoreManager) Store() InMemoryStore {
 }
 
 // NewStoreManager initializes the store based on the config
-func NewStoreManager(configPath string) (*StoreManager, error) {
+func NewStoreManager(configPath string) (*StoreManager, *Config, error) {
 	config, err := LoadConfig(configPath)
 	if err != nil {
 		logger.Info(constants.FallbackLightning, map[string]interface{}{"error": err.Error()})
-		return &StoreManager{store: NewLightningDB(nil)}, nil
+		return &StoreManager{store: NewLightningDB(nil)}, nil, err
 	}
 
 	store, err := NewStoreFromConfig(config)
@@ -164,7 +169,7 @@ func NewStoreManager(configPath string) (*StoreManager, error) {
 		store = NewLightningDB(nil)
 	}
 
-	return &StoreManager{store: store}, nil
+	return &StoreManager{store: store}, config, nil
 }
 
 // NewStoreFromConfig creates a store based on config

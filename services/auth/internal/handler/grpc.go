@@ -22,23 +22,23 @@ func NewGRPCHandler(auth service.AuthService) (*GRPCHandler, error) {
 	}, nil
 }
 
-func (h *GRPCHandler) Login(ctx context.Context, loginID string, password string, accountType string) (*pb.LoginResponse, error) {
+func (h *GRPCHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	logger.Info(constants.LoginAttempt, map[string]interface{}{
-		"loginID": loginID,
+		"loginID": req.LoginId,
 	})
-	if loginID == "" || password == "" || accountType == "" {
+	if req.LoginId == "" || req.Password == "" || req.AccountType == "" {
 		logger.Error(constants.ValidationMissingCredentials, nil, map[string]interface{}{
 			"method":  constants.Methods.Login,
-			"loginID": loginID,
+			"loginID": req.LoginId,
 		})
 		return nil, status.Error(codes.InvalidArgument, constants.ValidationMissingCredentials)
 	}
-	req := &pb.LoginRequest{
-		LoginId:     loginID,
-		Password:    password,
-		AccountType: accountType,
+	request := &pb.LoginRequest{
+		LoginId:     req.LoginId,
+		Password:    req.Password,
+		AccountType: req.AccountType,
 	}
-	return h.authService.Login(ctx, req)
+	return h.authService.Login(ctx, request)
 }
 
 func (h *GRPCHandler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginResponse, error) {
@@ -63,7 +63,7 @@ func (h *GRPCHandler) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequ
 		})
 		return nil, status.Error(codes.InvalidArgument, constants.AuthAccessRequired)
 	}
-	return h.authService.ValidateToken(ctx, req)
+	return h.authService.VerifyToken(ctx, req)
 }
 
 func (h *GRPCHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {

@@ -31,7 +31,7 @@ func loadEnv() {
 	if err := godotenv.Load(envFile); err != nil {
 		log.Printf("No %s file found, continuing without it", envFile)
 	}
-	log.Printf("🌍 Loaded %s environment", appEnv)
+	log.Printf("🌍 Loaded %s environment - %s", appEnv, envFile)
 }
 
 func connectDB() (*sql.DB, error) {

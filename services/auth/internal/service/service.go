@@ -21,7 +21,7 @@ import (
 type AuthService interface {
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginResponse, error)
-	ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error)
+	VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error)
 	Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error)
 }
 
@@ -238,11 +238,11 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	return nil, errors.New("couldn't refresh token")
 }
 
-func (s *authService) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
+func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
 	input := mapper.VerifyTokenRequest(req)
 	if input.AccessToken == "" {
 		logger.Error(constants.AuthAccessRequired, nil, map[string]interface{}{
-			"method": constants.Methods.ValidateToken,
+			"method": constants.Methods.VerifyToken,
 		})
 		return nil, fmt.Errorf(constants.AuthAccessRequired)
 	}
@@ -250,13 +250,13 @@ func (s *authService) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequ
 	claims, err := s.tokenManager.VerifyToken(input.AccessToken)
 	if err != nil {
 		logger.Error(constants.AuthTokenVeriFailed, err, map[string]interface{}{
-			"method": constants.Methods.ValidateToken,
+			"method": constants.Methods.VerifyToken,
 		})
 		return nil, fmt.Errorf(constants.AuthTokenVeriFailed)
 	}
 
 	logger.Info(constants.SuccessfulTokenValidation, map[string]interface{}{
-		"method": constants.Methods.ValidateToken,
+		"method": constants.Methods.VerifyToken,
 		"user":   claims.EmployeeID,
 	})
 

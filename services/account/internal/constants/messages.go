@@ -13,72 +13,41 @@ var EnvVariable = struct {
 
 // List of Methods
 var Methods = struct {
-	Login                string
-	Logout               string
-	AccessToken          string
-	RefreshToken         string
-	VerifyToken          string
-	StoreToken           string
-	CheckToken           string
-	DeleteToken          string
-	GetUserByMobile      string
-	VerifyPassword       string
-	GenerateAccToken     string
-	GenerateRefreshToken string
-	LoadConfig           string
-	Validate             string
-	GetUser              string
+	CheckDBConn           string
+	CreateFranchise       string
+	CreateOwner           string
+	UpdateFranchise       string
+	UpdateFranchiseStatus string
+	DeleteFranchise       string
+	GetFranchiseByID      string
+	GetAllFranchises      string
+	GetFranchiseOwner     string
+	GetFranchiseDocuments string
+	GetFranchiseAccounts  string
 }{
-	Login:                "Login",
-	Logout:               "Logout",
-	Validate:             "Validate",
-	AccessToken:          "AccessToken",
-	RefreshToken:         "RefreshToken",
-	VerifyToken:          "ValidateToken",
-	StoreToken:           "StoreToken",
-	CheckToken:           "CheckToken",
-	DeleteToken:          "DeleteToken",
-	GetUserByMobile:      "GetUserByMobile",
-	VerifyPassword:       "VerifyPassword",
-	GenerateAccToken:     "GenerateAccessToken",
-	GenerateRefreshToken: "GenerateRefreshToken",
-	LoadConfig:           "LoadConfig",
-	GetUser:              "GetUser",
+	CheckDBConn:           "CheckDBConn",
+	CreateFranchise:       "CreateFranchise",
+	CreateOwner:           "CreateOwner",
+	UpdateFranchise:       "UpdateFranchise",
+	UpdateFranchiseStatus: "UpdateFranchiseStatus",
+	DeleteFranchise:       "DeleteFranchise",
+	GetFranchiseByID:      "GetFranchiseByID",
+	GetAllFranchises:      "GetAllFranchises",
+	GetFranchiseOwner:     "GetFranchiseOwner",
+	GetFranchiseDocuments: "GetFranchiseDocuments",
+	GetFranchiseAccounts:  "GetFranchiseAccounts",
 }
 
 const (
-	// Authentication Messages
-	AuthLoginSuccess          = "user successfully logged in"
-	AuthLoginFailure          = "invalid credentials provided"
-	AuthTokenIssued           = "jwt token issued successfully"
-	AuthTokenInvalid          = "invalid or expired token"
-	AuthTokenVerified         = "token verified successfully"
-	AuthTokenVeriFailed       = "token verification failed"
-	AuthAccessDenied          = "access denied: unauthorized user"
-	AuthRefreshSuccess        = "access token refreshed successfully"
-	AuthRefreshFailure        = "failed to refresh access token"
-	AuthRefreshRequired       = "refresh token required"
-	AuthAccessRequired        = "access token required"
-	FailedToGenerateAct       = "failed to generate access token: %w"
-	FailedToGenerateRsh       = "failed to generate refresh token: %w"
-	AuthRshTokenInvalid       = "invalid refresh token: %w"
-	ErrMissingRefreshToken    = "refresh token is missing in request"
-	ErrTokenDeletionFailed    = "failed to delete refresh token from in_memory_DB"
-	MsgLogoutSuccess          = "user successfully logged out"
-	ErrInvalidRequest         = "invalid request parameters"
-	AttemptRefreshToken       = "attempting to refresh token"
-	FailedToStoreRshToken     = "failed to store token in in_memory_DB"
-	SuccessfulLogin           = "user logged in successfully"
-	TokenParamMissing         = "token parameters missing"
-	SuccessfulRefreshToken    = "token refreshed successfully"
-	SuccessfulTokenValidation = "token validated successfully"
-	TokenStoredSuccessfully   = "token stored successfully"
-	RedisOperationFailed      = "redis operation failed"
-	FailedToDeleteRshToken    = "failed to delete token from in_memory_DB"
-	TokenDeleteSuccessfully   = "token deleted successfully"
-	GenerateAccessToken       = "generate access token"
-	RefreshTokenExistence     = "refresh token existence"
-	GenerateRefreshToken      = "generate refresh token"
+	Layer  = "layer"
+	Method = "method"
+)
+
+const (
+	Repository = "repository"
+)
+
+const (
 
 	// Config error handling messages
 	ConfigOverride          = "overriding config type with environment variable: %s"
@@ -110,11 +79,14 @@ const (
 	// Database Messages
 	DBConnectionSuccess    = "connected to the database successfully"
 	DBConnectionFailure    = "failed to connect to the database"
+	DBConnectionNil        = "database connection is nil"
 	DBQueryError           = "database query execution failed"
 	DBRecordNotFound       = "record not found"
 	ErrUnsupportedDatabase = "unsupported database"
 	ErrKeyNotFound         = "key not found"
 	ErrInvalidConfig       = "invalid config"
+	BuildInsertQuery       = "something went wrong inside query insert builder function"
+	BuildUpdateQuery       = "something went wrong inside query update builder function"
 
 	// System & Server Messages
 	SystemStartup  = "auth service is starting up..."

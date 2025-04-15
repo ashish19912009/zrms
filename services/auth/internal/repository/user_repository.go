@@ -9,6 +9,7 @@ import (
 	"github.com/ashish19912009/services/auth/internal/constants"
 	"github.com/ashish19912009/services/auth/internal/logger"
 	"github.com/ashish19912009/services/auth/internal/models"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,6 +28,11 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	}
 }
 
+func isUUID(s string) bool {
+	_, err := uuid.Parse(s)
+	return err == nil
+}
+
 func (r *userRepository) GetUser(ctx context.Context, indentifier string, accountType string) (*models.User, error) {
 	if indentifier == "" || accountType == "" {
 		logger.Error(constants.CredentialMissing, nil, map[string]interface{}{
@@ -36,8 +42,11 @@ func (r *userRepository) GetUser(ctx context.Context, indentifier string, accoun
 		})
 		return nil, fmt.Errorf(constants.CredentialMissing)
 	}
-
-	query := "SELECT account_id, employee_id, account_type, name, mobile_no, password, role, permissions, status FROM accounts WHERE (login_id = $1 OR account_id = $1) AND account_type = $2 AND deleted_at IS NULL"
+	var query string
+	if isUUID(indentifier) {
+		query = "SELECT account_id, employee_id, account_type, name, mobile_no, password_hash, role, permissions, status FROM users.team_accounts WHERE account_id = $1 AND account_type = $2 AND deleted_at IS NULL"
+	}
+	query = "SELECT account_id, employee_id, account_type, name, mobile_no, password_hash, role, permissions, status FROM users.team_accounts WHERE login_id = $1 AND account_type = $2 AND deleted_at IS NULL"
 	row := r.db.QueryRowContext(ctx, query, indentifier, accountType)
 
 	var user models.User
