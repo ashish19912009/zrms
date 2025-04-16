@@ -43,8 +43,8 @@ type FranchiseAccountResponse struct {
 	Name        string     `json:"name"`      // User's name
 	MobileNo    string     `json:"mobile_no"` // Unique mobile number
 	Email       string     `json:"email"`
-	RoleID      string     `json:"role_id"` // Role: super_admin, admin, delivery_partner
-	Status      string     `json:"status"`  // active, inactive, suspended
+	RoleName    string     `json:"role_name"` // Role: super_admin, admin, delivery_partner
+	Status      string     `json:"status"`    // active, inactive, suspended
 	CreatedAt   *time.Time `json:"created_at"`
 	UpdatedAt   *time.Time `json:"updated_at"`
 	DeletedAt   *time.Time `json:"deleted_at,omitempty"` // Nullable field for soft deletion
