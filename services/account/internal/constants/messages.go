@@ -24,6 +24,8 @@ var Methods = struct {
 	GetFranchiseOwner     string
 	GetFranchiseDocuments string
 	GetFranchiseAccounts  string
+	UpdateAccount         string
+	GetAccountByID        string
 }{
 	CheckDBConn:           "CheckDBConn",
 	CreateFranchise:       "CreateFranchise",
@@ -36,6 +38,8 @@ var Methods = struct {
 	GetFranchiseOwner:     "GetFranchiseOwner",
 	GetFranchiseDocuments: "GetFranchiseDocuments",
 	GetFranchiseAccounts:  "GetFranchiseAccounts",
+	UpdateAccount:         "UpdateAccount",
+	GetAccountByID:        "GetAccountByID",
 }
 
 const (
@@ -87,6 +91,8 @@ const (
 	ErrInvalidConfig       = "invalid config"
 	BuildInsertQuery       = "something went wrong inside query insert builder function"
 	BuildUpdateQuery       = "something went wrong inside query update builder function"
+	BuildSelectQuery       = "something went wrong inside query select builder function"
+	BuildDeleteQuery       = "something went wrong inside query delete builder function"
 
 	// System & Server Messages
 	SystemStartup  = "auth service is starting up..."
@@ -104,14 +110,23 @@ const (
 	UserDataMissing = "user data missing"
 
 	// Repository Layer
-	MobileNoRequired          = "mobile no required"
-	CredentialMissing         = "username or password missing"
-	ErrUserNotFound           = "user not found"
-	DBQueryFailed             = "db query failed"
-	UserFetchedSuccessful     = "user data fetched successfully"
-	ErrInvalidPassword        = "invalid password"
-	WrongUsernamePassword     = "wrong username and password"
-	PasswordMissingFromServer = "password missing from database"
+	MobileNoRequired            = "mobile no required"
+	CredentialMissing           = "username or password missing"
+	ErrUserNotFound             = "user not found"
+	DBQueryFailed               = "db query failed"
+	FailedToRetrv               = "failed to retrive data from last query performed"
+	UserFetchedSuccessful       = "user data fetched successfully"
+	ErrInvalidPassword          = "invalid password"
+	WrongUsernamePassword       = "wrong username and password"
+	PasswordMissingFromServer   = "password missing from database"
+	NoColumProvided             = "no columns provided"
+	UnauthorizedSchema          = "unauthorized schema: %s"
+	UnauthorizedTable           = "unauthorized table: %s"
+	UnauthorizedCloumn          = "unauthorized column: %s"
+	UnauthorizedConditionColumn = "unauthorized condition column: %s"
+	UnauthorizedReturningColumn = "unauthorized returning column: %s"
+	UnauthorizedJoinTable       = "unauthorized join table"
+	FailedToBeginTransaction    = "failed to begin transaction: %w"
 
 	// Token layer
 	ErrInvalidToken            = "invalid token"

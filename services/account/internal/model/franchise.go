@@ -38,7 +38,7 @@ type FranchiseDocumentResponse struct {
 	DocumentURL         string     `json:"document_url"`
 	UploadedBy          string     `json:"uploaded_by"`
 	CreatedAt           *time.Time `json:"created_at"`
-	UpdatedAt           *time.Time `json:"updated_at"`
+	UploadedAt          *time.Time `json:"uploaded_at"`
 	DeletedAt           *time.Time `json:"deleted_at,omitempty"` // Nullable field for soft deletion
 }
 
