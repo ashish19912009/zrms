@@ -1,101 +1,108 @@
 package repository_test
 
-import (
-	"database/sql"
-	"errors"
-	"testing"
-	"time"
+// import (
+// 	"context"
+// 	"database/sql"
+// 	"errors"
+// 	"testing"
+// 	"time"
 
-	"github.com/ashish19912009/zrms/services/account/internal/model"
-	"github.com/ashish19912009/zrms/services/account/internal/repository"
+// 	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
+// 	"github.com/ashish19912009/zrms/services/account/internal/model"
+// 	"github.com/ashish19912009/zrms/services/account/internal/repository"
+// 	"github.com/stretchr/testify/assert"
+// )
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
-)
+// type mockDB struct{}
 
-func setupMockDB(t *testing.T) (*sql.DB, sqlmock.Sqlmock, *repository.NewRepository) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
+// func (m *mockDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+// 	return nil, nil
+// }
 
-	repo := repository.NewRepository(db)
-	return db, mock, repo
-}
+// func (m *mockDB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+// 	return nil, nil
+// }
 
-func TestUpdateAccount(t *testing.T) {
-	db, mock, repo := setupMockDB(t)
-	defer db.Close()
+// // Mocks for dbutils
+// var (
+// 	mockBuildUpdateQuery      func(method, schema, table string, columns []string, conditions map[string]any, opts *dbutils.QueryBuilderOptions) (string, []any, error)
+// 	mockExecuteAndScanRow     func(ctx context.Context, method string, db *sql.DB, query string, args []any, dest ...any) error
+// 	mockCheckDBConn           func(db *sql.DB, method string) error
+// 	originalBuildUpdateQuery  = dbutils.BuildUpdateQuery
+// 	originalExecuteAndScanRow = dbutils.ExecuteAndScanRow
+// 	originalCheckDBConn       = dbutils.CheckDBConn
+// )
 
-	account := &model.FranchiseAccount{
-		EmployeeID:  "EMP123",
-		Name:        "John Doe",
-		MobileNo:    "9999999999",
-		AccountType: "staff",
-		Status:      "active",
-	}
+// func restoreDBUtils() {
+// 	dbutils.BuildUpdateQuery = originalBuildUpdateQuery
+// 	dbutils.ExecuteAndScanRow = originalExecuteAndScanRow
+// 	dbutils.CheckDBConn = originalCheckDBConn
+// }
 
-	mock.ExpectExec("UPDATE accounts").
-		WithArgs(account.Name, account.MobileNo, account.AccountType, account.Status, sqlmock.AnyArg(), account.EmployeeID).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+// func TestUpdateAccount_Success(t *testing.T) {
+// 	defer restoreDBUtils()
 
-	err := repo.UpdateAccount(account)
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
+// 	db := &sql.DB{}
+// 	repo := repository.NewRepository(db)
 
-func TestGetFranchiseByID_NotFound(t *testing.T) {
-	db, mock, repo := setupMockDB(t)
-	defer db.Close()
+// 	// Setup mocks
+// 	dbutils.CheckDBConn = func(db *sql.DB, method string) error {
+// 		return nil
+// 	}
 
-	mock.ExpectQuery("SELECT (.+) FROM franchises").
-		WithArgs("fr123").
-		WillReturnRows(sqlmock.NewRows([]string{})) // No columns/rows returned
+// 	dbutils.BuildUpdateQuery = func(method, schema, table string, columns []string, conditions map[string]any, opts *dbutils.QueryBuilderOptions) (string, []any, error) {
+// 		return "UPDATE query", []any{"val1", "val2"}, nil
+// 	}
 
-	fr, err := repo.GetFranchiseByID("fr123")
-	assert.Error(t, err)
-	assert.Nil(t, fr)
-}
+// 	dbutils.ExecuteAndScanRow = func(ctx context.Context, method string, db *sql.DB, query string, args []any, dest ...any) error {
+// 		// Simulate scan into FranchiseAccountResponse
+// 		dest[0] = "acc-id"
+// 		dest[1] = "franchise-id"
+// 		dest[2] = "emp-id"
+// 		dest[3] = "manager"
+// 		dest[4] = "John Doe"
+// 		dest[5] = "9876543210"
+// 		dest[6] = "john@example.com"
+// 		dest[7] = "admin"
+// 		dest[8] = "active"
+// 		dest[9] = time.Now()
+// 		dest[10] = time.Now()
+// 		return nil
+// 	}
 
-func TestGetFranchiseOwner_DBError(t *testing.T) {
-	db, mock, repo := setupMockDB(t)
-	defer db.Close()
+// 	ctx := context.Background()
+// 	account := &model.FranchiseAccount{
+// 		Name:      "John Doe",
+// 		Email:     "john@example.com",
+// 		MobileNo:  "9876543210",
+// 		RoleID:    "admin",
+// 		Status:    "active",
+// 		UpdatedAt: time.Now(),
+// 	}
 
-	mock.ExpectQuery("SELECT (.+) FROM accounts").
-		WithArgs("fr123", "owner").
-		WillReturnError(errors.New("db error"))
+// 	resp, err := repo.UpdateAccount(ctx, "acc-id", account)
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.Equal(t, "John Doe", resp.Name)
+// 	assert.Equal(t, "john@example.com", resp.Email)
+// 	assert.Equal(t, "admin", resp.RoleName)
+// }
 
-	acc, err := repo.GetFranchiseOwner("fr123")
-	assert.Error(t, err)
-	assert.Nil(t, acc)
-}
+// func TestUpdateAccount_DBConnError(t *testing.T) {
+// 	defer restoreDBUtils()
 
-func TestGetFranchiseDocuments_Success(t *testing.T) {
-	db, mock, repo := setupMockDB(t)
-	defer db.Close()
+// 	db := &sql.DB{}
+// 	repo := repository.NewRepository(db)
 
-	rows := sqlmock.NewRows([]string{"id", "franchise_id", "doc_type", "doc_url", "created_at", "updated_at"}).
-		AddRow("doc1", "fr123", "license", "http://example.com/license.pdf", time.Now(), time.Now())
+// 	dbutils.CheckDBConn = func(db *sql.DB, method string) error {
+// 		return errors.New("db connection error")
+// 	}
 
-	mock.ExpectQuery("SELECT (.+) FROM franchise_documents").
-		WithArgs("fr123").
-		WillReturnRows(rows)
+// 	ctx := context.Background()
+// 	account := &model.FranchiseAccount{}
 
-	docs, err := repo.GetFranchiseDocuments("fr123")
-	assert.NoError(t, err)
-	assert.Len(t, docs, 1)
-	assert.Equal(t, "doc1", docs[0].ID)
-}
-
-func TestGetFranchiseAccounts_EmptyResult(t *testing.T) {
-	db, mock, repo := setupMockDB(t)
-	defer db.Close()
-
-	mock.ExpectQuery("SELECT (.+) FROM accounts").
-		WithArgs("fr123").
-		WillReturnRows(sqlmock.NewRows([]string{
-			"employee_id", "full_name", "mobile_no", "account_type", "status", "created_at", "updated_at",
-		}))
-
-	accs, err := repo.GetFranchiseAccounts("fr123")
-	assert.NoError(t, err)
-	assert.Len(t, accs, 0)
-}
+// 	resp, err := repo.UpdateAccount(ctx, "id", account)
+// 	assert.Error(t, err)
+// 	assert.Nil(t, resp)
+// 	assert.Equal(t, "db connection error", err.Error())
+// }

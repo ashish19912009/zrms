@@ -18,10 +18,6 @@ mockery --name=Repository --dir=services/account/internal/repository --output=se
 **/
 
 const (
-	layer  = constants.Layer
-	method = constants.Method
-)
-const (
 	id             = "id"
 	franchise_id   = "franchise_id"
 	business_name  = "business_name"
@@ -65,7 +61,6 @@ func NewAdminRepository(db *sql.DB) AdminRepository {
 func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput *model.Franchise, f_owner *model.FranchiseOwner) (*model.FranchiseResponse, error) {
 	var (
 		method = constants.Methods.CreateFranchise
-		schema = constants.DB.Schema_Outlet
 		table  = constants.DB.Table_Franchise
 	)
 
@@ -136,7 +131,6 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput 
 
 func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.FranchiseResponse, error) {
 	var method = constants.Methods.UpdateFranchise
-	var schema = constants.DB.Schema_Outlet
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
@@ -151,7 +145,7 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 	}
 	opts.Whilelist.Schemas = []string{schema}
 	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = columns
+	opts.Whilelist.Columns = append(columns, "id", "updated_at")
 
 	query, args, err := dbutils.BuildUpdateQuery(
 		method,
@@ -177,7 +171,6 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 
 func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string, status string) (string, error) {
 	var method = constants.Methods.UpdateFranchiseStatus
-	var schema = constants.DB.Schema_Outlet
 	var table = constants.DB.Table_Franchise
 	// Check database connection
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -223,7 +216,6 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 
 func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (bool, error) {
 	var method = constants.Methods.DeleteFranchise
-	var schema = constants.DB.Schema_Outlet
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return false, err
@@ -268,7 +260,6 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (boo
 func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error) {
 	// Step 1: DB Connection Check
 	var method = constants.Methods.GetAllFranchises
-	var schema = constants.DB.Schema_Outlet
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err

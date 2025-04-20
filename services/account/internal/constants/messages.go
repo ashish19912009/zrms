@@ -13,33 +13,61 @@ var EnvVariable = struct {
 
 // List of Methods
 var Methods = struct {
-	CheckDBConn           string
-	CreateFranchise       string
-	CreateOwner           string
-	UpdateFranchise       string
-	UpdateFranchiseStatus string
-	DeleteFranchise       string
-	GetFranchiseByID      string
-	GetAllFranchises      string
-	GetFranchiseOwner     string
-	GetFranchiseDocuments string
-	GetFranchiseAccounts  string
-	UpdateAccount         string
-	GetAccountByID        string
+	CheckDBConn              string
+	CreateFranchise          string
+	CreateOwner              string
+	UpdateFranchise          string
+	UpdateFranchiseStatus    string
+	DeleteFranchise          string
+	GetFranchiseByID         string
+	GetAllFranchises         string
+	GetFranchiseOwner        string
+	AddFranchiseDocument     string
+	UpdateFranchiseDocument  string
+	GetAllFranchiseDocuments string
+	GetAllFranchiseAccounts  string
+	CreateFranchiseAccount   string
+	UpdateFranchiseAccount   string
+	GetAccountByID           string
+	GetFranchiseAddressByID  string
+	AddFranchiseAddress      string
+	UpdateFranchiseAddress   string
+	AddFranchiseRole         string
+	UpdateFranchiseRole      string
+	GetAllFranchiseRoles     string
+	AddPermissionsToRole     string
+	UpdatePermissionsToRole  string
+	GetAllPermissionsToRole  string
+	GetFranchiseOwnerByID    string
+	GetFranchiseAccountByID  string
 }{
-	CheckDBConn:           "CheckDBConn",
-	CreateFranchise:       "CreateFranchise",
-	CreateOwner:           "CreateOwner",
-	UpdateFranchise:       "UpdateFranchise",
-	UpdateFranchiseStatus: "UpdateFranchiseStatus",
-	DeleteFranchise:       "DeleteFranchise",
-	GetFranchiseByID:      "GetFranchiseByID",
-	GetAllFranchises:      "GetAllFranchises",
-	GetFranchiseOwner:     "GetFranchiseOwner",
-	GetFranchiseDocuments: "GetFranchiseDocuments",
-	GetFranchiseAccounts:  "GetFranchiseAccounts",
-	UpdateAccount:         "UpdateAccount",
-	GetAccountByID:        "GetAccountByID",
+	CheckDBConn:              "CheckDBConn",
+	CreateFranchise:          "CreateFranchise",
+	CreateOwner:              "CreateOwner",
+	UpdateFranchise:          "UpdateFranchise",
+	UpdateFranchiseStatus:    "UpdateFranchiseStatus",
+	DeleteFranchise:          "DeleteFranchise",
+	GetFranchiseByID:         "GetFranchiseByID",
+	GetAllFranchises:         "GetAllFranchises",
+	GetFranchiseOwner:        "GetFranchiseOwner",
+	AddFranchiseDocument:     "AddFranchiseDocument",
+	UpdateFranchiseDocument:  "UpdateFranchiseDocument",
+	GetAllFranchiseDocuments: "GetAllFranchiseDocuments",
+	GetAllFranchiseAccounts:  "GetAllFranchiseAccounts",
+	CreateFranchiseAccount:   "CreateFranchiseAccount",
+	UpdateFranchiseAccount:   "UpdateFranchiseAccount",
+	GetAccountByID:           "GetAccountByID",
+	GetFranchiseAddressByID:  "GetFranchiseAddressByID",
+	AddFranchiseAddress:      "AddFranchiseAddress",
+	UpdateFranchiseAddress:   "UpdateFranchiseAddress",
+	AddFranchiseRole:         "AddFranchiseRole",
+	UpdateFranchiseRole:      "UpdateFranchiseRole",
+	GetAllFranchiseRoles:     "GetAllFranchiseRoles",
+	AddPermissionsToRole:     "AddPermissionsToRole",
+	UpdatePermissionsToRole:  "UpdatePermissionsToRole",
+	GetAllPermissionsToRole:  "GetAllPermissionsToRole",
+	GetFranchiseOwnerByID:    "GetFranchiseOwnerByID",
+	GetFranchiseAccountByID:  "GetFranchiseAccountByID",
 }
 
 const (

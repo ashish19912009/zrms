@@ -23,6 +23,7 @@ type FranchiseAccount struct {
 	FranchiseID string     `json:"franchise_id"`
 	EmployeeID  string     `json:"employee_id"` // Unique employee ID (for admins/delivery partners)
 	LoginID     string     `json:"login_id"`
+	Password    string     `json:"password"`
 	AccountType string     `json:"account_type"`
 	Name        string     `json:"name"`      // User's name
 	MobileNo    string     `json:"mobile_no"` // Unique mobile number
