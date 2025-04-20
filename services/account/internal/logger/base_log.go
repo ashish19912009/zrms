@@ -2,9 +2,13 @@ package logger
 
 type LogKey string
 
-func BaseLogContext(layer string, layer_name string, method string, method_name string) map[string]interface{} {
-	return map[string]interface{}{
-		string(layer):  layer_name,
-		string(method): method_name,
+func BaseLogContext(pairs ...string) map[string]interface{} {
+	logContext := make(map[string]interface{})
+
+	for i := 0; i < len(pairs)-1; i += 2 {
+		key := pairs[i]
+		value := pairs[i+1]
+		logContext[key] = value
 	}
+	return logContext
 }

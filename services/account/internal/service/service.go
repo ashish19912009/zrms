@@ -28,10 +28,12 @@ Return structured responses.
 
 // AccountService defines business logic for accounts
 type AccountService interface {
-	CreateAccount(ctx context.Context, account *model.Account) (*model.Account, error)
-	UpdateAccount(ctx context.Context, account *model.Account) (*model.Account, error)
-	GetAccountByID(ctx context.Context, id string) (*model.Account, error)
-	ListAccounts(ctx context.Context, skip, take uint64) ([]*model.Account, error)
+	UpdateAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
+	GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error)
+	GetFranchiseOwner(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
+	GetAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
+	GetFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponse, error)
+	GetFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
 }
 
 // accountService implements AccountService

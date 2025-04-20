@@ -22,27 +22,46 @@ type FranchiseResponse struct {
 	DeletedAt     *time.Time             `json:"deleted_at,omitempty"` // Nullable field for soft deletion
 }
 
+type CommonReturn struct {
+	ID string `json:"id"`
+}
+
 type FranchiseDocument struct {
-	DocumentName        string `json:"doc_name"`
-	DocumentDescription string `json:"doc_desc"`
-	IsMandate           string `json:"is_mandate"`
-	DocumentURL         string `json:"document_url"`
-	UploadedBy          string `json:"uploaded_by"`
+	FranchiseID    string `json:"franchise_id"`
+	DocumentTypeID string `json:"document_type_id"`
+	DocumentURL    string `json:"document_url"`
+	UploadedBy     string `json:"uploaded_by"`
+	Status         string `json:"status"`
+	Remark         string `json:"remark"`
+	VerifiedAt     string `json:"verified_id"`
 }
 
 type FranchiseDocumentResponse struct {
+	ID             string `json:"id"`
+	FranchiseID    string `json:"franchise_id"`
+	DocumentTypeID string `json:"document_type_id"`
+	DocumentURL    string `json:"document_url"`
+	UploadedBy     string `json:"uploaded_by"`
+	Status         string `json:"status"`
+	Remark         string `json:"remark"`
+	VerifiedAt     string `json:"verified_id"`
+}
+
+type FranchiseDocumentResponseComplete struct {
 	ID                  string     `json:"id"`
 	DocumentName        string     `json:"doc_name"`
 	DocumentDescription string     `json:"doc_desc"`
 	IsMandate           string     `json:"is_mandate"`
 	DocumentURL         string     `json:"document_url"`
 	UploadedBy          string     `json:"uploaded_by"`
-	CreatedAt           *time.Time `json:"created_at"`
-	UpdatedAt           *time.Time `json:"updated_at"`
-	DeletedAt           *time.Time `json:"deleted_at,omitempty"` // Nullable field for soft deletion
+	Status              string     `json:"status"`
+	Remark              string     `json:"remark"`
+	VerifiedAt          string     `json:"verified_id"`
+	UploadedAt          *time.Time `json:"uploaded_at"`
 }
 
 type FranchiseAddress struct {
+	FranchiseID string `json:"franchise_id"`
 	AddressLine string `json:"address_line"`
 	City        string `json:"city"`
 	State       string `json:"state"`
@@ -50,6 +69,7 @@ type FranchiseAddress struct {
 	Pincode     string `json:"pincode"`
 	Latitude    string `json:"latitude"`
 	Longitude   string `json:"longitude"`
+	IsVerified  string `json:"is_verified"`
 }
 
 type FranchiseAddressResponse struct {
@@ -61,9 +81,9 @@ type FranchiseAddressResponse struct {
 	Pincode     string     `json:"pincode"`
 	Latitude    string     `json:"latitude"`
 	Longitude   string     `json:"longitude"`
+	IsVerified  string     `json:"is_verified"`
 	CreatedAt   *time.Time `json:"created_at"`
 	UpdatedAt   *time.Time `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"` // Nullable field for soft deletion
 }
 
 type FranchiseOwner struct {
@@ -91,4 +111,37 @@ type FranchiseOwnerResponse struct {
 	Status     string     `json:"status"`
 	CreatedAt  *time.Time `json:"created_at"`
 	UpdatedAt  *time.Time `json:"updated_at"`
+}
+
+type FranchiseRole struct {
+	FranchiseID string `json:"franchise_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsDefault   bool   `json:"is_default"`
+}
+
+type FranchiseRoleResponse struct {
+	ID          string     `json:"id"`
+	FranchiseID string     `json:"franchise_id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	IsDefault   bool       `json:"is_default"`
+	CreatedAt   *time.Time `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
+
+type RoleToPermissions struct {
+	RoleID       string `json:"role_id"`
+	PermissionID string `json:"permission_id"`
+}
+
+type RoleToPermissionsComplete struct {
+	FranchiseID            string     `json:"franchise_id"`
+	RoleName               string     `json:"name"`
+	Role_Description       string     `json:"description"`
+	IsDefault              string     `json:"is_default"`
+	Permission_Key         string     `json:"p.key"`
+	Permission_Description string     `json:"p.description"`
+	CreatedAt              *time.Time `json:"created_at"`
+	UpdatedAt              *time.Time `json:"updated_at"`
 }

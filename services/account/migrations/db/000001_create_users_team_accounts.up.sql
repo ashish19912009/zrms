@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS outlet.franchise_addresses (
     pincode VARCHAR(10),
     latitude DECIMAL(9,6),
     longitude DECIMAL(9,6),
+    is_verified Boolean,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
