@@ -7,13 +7,13 @@ CREATE TABLE IF NOT EXISTS outlet.franchises (
     logo_url TEXT,
     theme_settings JSONB DEFAULT '{}'::jsonb,
     status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
+    franchise_owner_id UUID NOT NULL, -- person who opened the franchise
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS outlet.owner (
     id UUID PRIMARY KEY,
-    franchise_id UUID NOT NULL REFERENCES outlet.franchises(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     gender TEXT NOT NULL,
     dob TIMESTAMPTZ NOT NULL,
@@ -26,6 +26,44 @@ CREATE TABLE IF NOT EXISTS outlet.owner (
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- New pivot table to link owners to franchises (many-to-many)
+CREATE TABLE IF NOT EXISTS outlet.franchise_owners (
+    id UUID PRIMARY KEY,
+    franchise_id UUID NOT NULL REFERENCES outlet.franchises(id) ON DELETE CASCADE,
+    owner_id UUID NOT NULL REFERENCES outlet.owners(id) ON DELETE CASCADE,
+    is_primary BOOLEAN DEFAULT FALSE, -- mark main owner if needed
+    ownership_percentage NUMERIC(5, 2), -- optional: share in %
+    role TEXT DEFAULT 'owner', -- 'owner', 'partner', 'manager', etc.
+    joined_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(franchise_id, owner_id) -- prevent duplicates
+);
+
+ALTER TABLE outlet.franchises
+ADD CONSTRAINT fk_franchise_owner
+FOREIGN KEY (franchise_owner_id) REFERENCES outlet.owners(id) ON DELETE RESTRICT;
+
+CREATE OR REPLACE FUNCTION outlet.ensure_creator_in_franchise_owners()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Check if the owner exists in franchise_owners
+    IF NOT EXISTS (
+        SELECT 1 FROM outlet.franchise_owners
+        WHERE franchise_id = NEW.id
+          AND owner_id = NEW.franchise_owner_id
+    ) THEN
+        -- If not, raise an error
+        RAISE EXCEPTION 'Franchise owner must be part of franchise_owners table';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_check_franchise_owner_exists
+AFTER INSERT OR UPDATE ON outlet.franchises
+FOR EACH ROW
+EXECUTE FUNCTION outlet.ensure_creator_in_franchise_owners();
 
 CREATE TABLE IF NOT EXISTS outlet.roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

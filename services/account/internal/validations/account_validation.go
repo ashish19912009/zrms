@@ -2,7 +2,6 @@ package validations
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -14,39 +13,72 @@ import (
 )
 
 var (
-	allowedRoles    = []string{"admin", "manager", "delivery"}
-	allowedStatuses = []string{"active", "inactive", "suspended"}
+	allowedStatuses = []string{"active", "inactive", "suspended", "blocked", "limited"}
+	allowedGenders  = []string{
+		"male", "female",
+		"transgender male", "transgender female",
+		"non-binary", "genderqueer", "genderfluid",
+		"agender", "bigender", "trigender", "pangender",
+		"demiboy", "demigirl", "demigender",
+		"two-spirit", "hijra", "fa'afafine",
+		"neutrois", "maverique", "androgyne", "intergender",
+		"questioning", "other", "prefer not to say"}
 )
-
-func SetAllowedRoles(roles []string) {
-	allowedRoles = roles
-}
 
 func SetAllowedStatuses(statuses []string) {
 	allowedStatuses = statuses
 }
 
+func SetAllowedGenders(genders []string) {
+	allowedGenders = genders
+}
+
 var (
-	ErrMobileRequired      = errors.New("validation.error.mobile_required")
-	ErrNameRequired        = errors.New("validation.error.name_required")
-	ErrInvalidRole         = errors.New("validation.error.invalid_role")
-	ErrInvalidStatus       = errors.New("validation.error.invalid_status")
-	ErrAccountIDRequired   = errors.New("validation.error.account_id_required")
-	ErrEmptyString         = errors.New("input cannot be empty")
-	ErrLengthTooShort      = errors.New("input is too short")
-	ErrLengthTooLong       = errors.New("input is too long")
-	ErrRestrictedWordFound = errors.New("input contains restricted word")
-	ErrNotAlphanumeric     = errors.New("input must be alphanumeric")
-	ErrDoesNotMatchPattern = errors.New("input does not match required pattern")
-	ErrMissingPrefix       = errors.New("input must start with required prefix")
-	ErrMissingSuffix       = errors.New("input must end with required suffix")
-	ErrNotNumeric          = errors.New("input must be numeric")
-	ErrInvalidUTF8         = errors.New("input is not valid UTF-8")
-	ErrMissingCharacter    = errors.New("input must contain required character")
-	ErrInvalidOption       = errors.New("input is not an allowed option")
-	ErrInvalidURL          = errors.New("input must be a valid URL")
-	ErrNotLowercase        = errors.New("input must be all lowercase")
-	ErrNotUppercase        = errors.New("input must be all uppercase")
+	ErrMobileRequired           = errors.New("validation.error.mobile_required")
+	ErrNameRequired             = errors.New("validation.error.name_required")
+	ErrInvalidRole              = errors.New("validation.error.invalid_role")
+	ErrInvalidStatus            = errors.New("validation.error.invalid_status")
+	ErrAccountIDRequired        = errors.New("validation.error.account_id_required")
+	ErrEmptyString              = errors.New("input cannot be empty")
+	ErrLengthTooShort           = errors.New("input is too short")
+	ErrLengthTooLong            = errors.New("input is too long")
+	ErrRestrictedWordFound      = errors.New("input contains restricted word")
+	ErrNotAlphanumeric          = errors.New("input must be alphanumeric")
+	ErrDoesNotMatchPattern      = errors.New("input does not match required pattern")
+	ErrMissingPrefix            = errors.New("input must start with required prefix")
+	ErrMissingSuffix            = errors.New("input must end with required suffix")
+	ErrNotNumeric               = errors.New("input must be numeric")
+	ErrInvalidUTF8              = errors.New("input is not valid UTF-8")
+	ErrMissingCharacter         = errors.New("input must contain required character")
+	ErrInvalidOption            = errors.New("input is not an allowed option")
+	ErrInvalidURL               = errors.New("input must be a valid URL")
+	ErrNotLowercase             = errors.New("input must be all lowercase")
+	ErrNotUppercase             = errors.New("input must be all uppercase")
+	ErrPasswordEmpty            = errors.New("password is required")
+	ErrPasswordTooShort         = errors.New("password must be at least 8 characters long")
+	ErrPasswordTooLong          = errors.New("password must not exceed 64 characters")
+	ErrPasswordMissingUpper     = errors.New("password must contain at least one uppercase letter")
+	ErrPasswordMissingLower     = errors.New("password must contain at least one lowercase letter")
+	ErrPasswordMissingDigit     = errors.New("password must contain at least one digit")
+	ErrPasswordMissingSpecial   = errors.New("password must contain at least one special character")
+	ErrPasswordContainsSpace    = errors.New("password must not contain spaces")
+	ErrUUIDEmpty                = errors.New("UUID is required")
+	ErrInvalidUUID              = errors.New("invalid UUID format")
+	ErrEmailEmpty               = errors.New("email is required")
+	ErrInvalidEmail             = errors.New("invalid email format")
+	ErrTimeRequired             = errors.New("time value is required")
+	ErrTimeInFuture             = errors.New("time must not be in the future")
+	ErrTimeTooFarPast           = errors.New("time is too far in the past")
+	ErrInvalidGender            = errors.New("Invalid gender selected")
+	ErrDateFormatNotRecongnized = errors.New("Date format not recognized")
+	ErrDateNotBeFuture          = errors.New("DOB cannot be in the future")
+	ErrDateInNegative           = errors.New("DOB results in negative age")
+	ErrDateUnrealistic          = errors.New("Age seems unrealistic (>150 years)")
+	ErrAadhaarEmpty             = errors.New("aadhaar number is required")
+	ErrAadhaarLength            = errors.New("aadhaar number must be exactly 12 digits")
+	ErrAadhaarNotNumeric        = errors.New("aadhaar number must contain only digits")
+	ErrAadhaarInvalidStart      = errors.New("aadhaar number cannot start with 0 or 1")
+	ErrAadhaarInvalidChecksum   = errors.New("aadhaar number is invalid based on checksum (Verhoeff algorithm)")
 )
 
 // Length check (ValidateLength)
@@ -83,15 +115,13 @@ func ValidateFranchise(franchise *model.Franchise) error {
 	businessName := TrimWhitespace(franchise.BusinessName)
 	LogoURL := TrimWhitespace(franchise.LogoURL)
 	SubDomain := TrimWhitespace(franchise.SubDomain)
+	owner_id := TrimWhitespace(franchise.Franchise_Owner_id)
 
 	// validate business name
-	if err := ValidateName(businessName); err != nil {
+	if err := ValidateNotEmpty(businessName); err != nil {
 		return err
 	}
 	if err := ValidateLength(businessName, 5, 100); err != nil {
-		return err
-	}
-	if err := ValidateNotEmpty(businessName); err != nil {
 		return err
 	}
 	if err := ValidateNoRestrictedWords(businessName, []string{}); err != nil {
@@ -99,38 +129,199 @@ func ValidateFranchise(franchise *model.Franchise) error {
 	}
 
 	// validate LogoURL
-	if err := ValidateName(LogoURL); err != nil {
-		return err
-	}
-	if err := ValidateLength(LogoURL, 5, 150); err != nil {
-		return err
-	}
 	if err := ValidateNotEmpty(LogoURL); err != nil {
+		return err
+	}
+	if err := ValidateLength(LogoURL, 5, 200); err != nil {
 		return err
 	}
 	if err := ValidateURL(LogoURL); err != nil {
 		return err
 	}
-	return nil
 
 	// validate domain
-	if err := ValidateName(SubDomain); err != nil {
+	if err := ValidateNotEmpty(SubDomain); err != nil {
 		return err
 	}
-	if err := ValidateLength(businessName, 5, 100); err != nil {
+	if err := ValidateLength(SubDomain, 5, 50); err != nil {
 		return err
 	}
-	if err := ValidateNotEmpty(businessName); err != nil {
+	// validate franchise_owner_id
+	// validate domain
+	if err := ValidateNotEmpty(owner_id); err != nil {
 		return err
 	}
-	if err := ValidateNoRestrictedWords(businessName, []string{}); err != nil {
+	if err := ValidateUUID(owner_id); err != nil {
 		return err
 	}
+	return nil
 }
 
-func ValidateAccountUpdate(acc *model.Account) error {
-	if acc.ID == "" {
-		return errors.New(ErrAccountIDRequired.Error())
+func ValidateFranchiseOwner(f_owner *model.FranchiseOwner) error {
+	name := f_owner.Name
+	gender := f_owner.Gender
+	dob := f_owner.Dob
+	mobile_no := f_owner.MobileNo
+	email := f_owner.Email
+	address := f_owner.Address
+	aadhar_no := f_owner.AadharNo
+	status := f_owner.Status
+
+	// validate name
+	if err := ValidateNotEmpty(name); err != nil {
+		return err
+	}
+	if err := ValidateLength(name, 5, 100); err != nil {
+		return err
+	}
+	if err := ValidateNoRestrictedWords(name, []string{}); err != nil {
+		return err
+	}
+	// validate gender
+	if err := ValidateNotEmpty(gender); err != nil {
+		return err
+	}
+	if err := ValidateGenders(gender); err != nil {
+		return err
+	}
+	// validate dob
+	if err := ValidateNotEmpty(dob); err != nil {
+		return err
+	}
+	if err := validateDOB(dob); err != nil {
+		return err
+	}
+	// validate mobile no
+	if err := ValidateNotEmpty(mobile_no); err != nil {
+		return err
+	}
+	if err := ValidateMobileNo(dob); err != nil {
+		return err
+	}
+	// validate email
+	if err := ValidateNotEmpty(email); err != nil {
+		return err
+	}
+	if err := ValidateEmail(email); err != nil {
+		return err
+	}
+	// validate address
+	if err := ValidateNotEmpty(address); err != nil {
+		return err
+	}
+	if err := ValidateLength(address, 5, 500); err != nil {
+		return err
+	}
+	// validate aadhar
+	if err := ValidateNotEmpty(aadhar_no); err != nil {
+		return err
+	}
+	if err := ValidateAadhaarNumber(aadhar_no); err != nil {
+		return err
+	}
+	// validate status
+	if err := ValidateNotEmpty(status); err != nil {
+		return err
+	}
+	if err := ValidateStatus(status); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ValidateFranchiseAccounts(acc *model.FranchiseAccount) error {
+	franchise_id := acc.FranchiseID
+	emp_id := acc.EmployeeID
+	login_id := acc.LoginID
+	password := acc.Password
+	account_type := acc.AccountType
+	name := acc.Name
+	mobileNo := acc.MobileNo
+	email := acc.Email
+	roleID := acc.RoleID
+	status := acc.Status
+	created_at := acc.CreatedAt
+	updated_at := acc.UpdatedAt
+	deleted_at := acc.DeletedAt
+
+	// validate franchise_id
+	if err := ValidateNotEmpty(franchise_id); err != nil {
+		return err
+	}
+	if err := ValidateUUID(franchise_id); err != nil {
+		return err
+	}
+	// validate emp_id
+	if err := ValidateNotEmpty(emp_id); err != nil {
+		return err
+	}
+	// validate login
+	if err := ValidateNotEmpty(login_id); err != nil {
+		return err
+	}
+	if err := ValidateLength(login_id, 5, 50); err != nil {
+		return err
+	}
+	// validate password
+	if err := ValidateNotEmpty(password); err != nil {
+		return err
+	}
+	if err := ValidatePassword(password); err != nil {
+		return err
+	}
+	// validate account type
+	if err := ValidateNotEmpty(account_type); err != nil {
+		return err
+	}
+	// validate name
+	if err := ValidateNotEmpty(name); err != nil {
+		return err
+	}
+	if err := ValidateLength(name, 5, 100); err != nil {
+		return err
+	}
+	// validate mobile no
+	if err := ValidateNotEmpty(mobileNo); err != nil {
+		return err
+	}
+	if err := ValidateMobileNo(mobileNo); err != nil {
+		return err
+	}
+	// validate email
+	if err := ValidateNotEmpty(email); err != nil {
+		return err
+	}
+	if err := ValidateEmail(email); err != nil {
+		return err
+	}
+	// validate role
+	if err := ValidateNotEmpty(roleID); err != nil {
+		return err
+	}
+	// validate status
+	if err := ValidateNotEmpty(status); err != nil {
+		return err
+	}
+	if err := ValidateStatus(status); err != nil {
+		return err
+	}
+	// validate created_at
+	if !created_at.IsZero() {
+		if err := ValidateTime(created_at); err != nil {
+			return err
+		}
+	}
+	// validate updated_at
+	if !updated_at.IsZero() {
+		if err := ValidateTime(updated_at); err != nil {
+			return err
+		}
+	}
+	// validate deleted_at
+	if !deleted_at.IsZero() {
+		if err := ValidateTime(deleted_at); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -146,22 +337,6 @@ func ValidateMobileNo(mobile string) error {
 	return nil
 }
 
-func ValidateName(name string) error {
-	if strings.TrimSpace(name) == "" {
-		return errors.New(ErrNameRequired.Error())
-	}
-	return nil
-}
-
-func ValidateRole(role string) error {
-	for _, r := range allowedRoles {
-		if r == role {
-			return nil
-		}
-	}
-	return errors.New(ErrInvalidRole.Error())
-}
-
 func ValidateStatus(status string) error {
 	for _, s := range allowedStatuses {
 		if s == status {
@@ -171,8 +346,17 @@ func ValidateStatus(status string) error {
 	return errors.New(ErrInvalidStatus.Error())
 }
 
+func ValidateGenders(gender string) error {
+	for _, s := range allowedGenders {
+		if s == gender {
+			return nil
+		}
+	}
+	return errors.New(ErrInvalidGender.Error())
+}
+
 // validateDOB validates the given date of birth string against multiple patterns
-func validateDOB(dobStr string) (bool, string) {
+func validateDOB(dobStr string) error {
 	// Define possible date formats
 	dateFormats := []string{
 		"2006-01-02", "02-01-2006", "01-02-2006", // YYYY-MM-DD, DD-MM-YYYY, MM-DD-YYYY
@@ -191,12 +375,12 @@ func validateDOB(dobStr string) (bool, string) {
 	}
 
 	if err != nil {
-		return false, "Date format not recognized"
+		return errors.New(ErrDateFormatNotRecongnized.Error())
 	}
 
 	// Check if the date is in the future
 	if dob.After(time.Now()) {
-		return false, "DOB cannot be in the future"
+		return errors.New(ErrDateNotBeFuture.Error())
 	}
 
 	// Calculate the age
@@ -207,39 +391,39 @@ func validateDOB(dobStr string) (bool, string) {
 
 	// Check for unrealistic age
 	if age < 0 {
-		return false, "DOB results in negative age"
+		return errors.New(ErrDateInNegative.Error())
 	} else if age > 150 {
-		return false, "Age seems unrealistic (>150 years)"
+		return errors.New(ErrDateUnrealistic.Error())
 	}
-
-	return true, fmt.Sprintf("Valid DOB. Age: %d years", age)
+	return errors.New("something wrong in date")
 }
 
-// ValidateAadhaarNumber validates the given Aadhaar number
-func ValidateAadhaarNumber(aadhaar string) (bool, string) {
-	// Check if the Aadhaar number is exactly 12 digits
+// ValidateAadhaarNumber validates the format and structure of an Aadhaar number (India)
+func ValidateAadhaarNumber(aadhaar string) error {
+	// Trim any whitespace
+	aadhaar = strings.TrimSpace(aadhaar)
+
+	if aadhaar == "" {
+		return ErrAadhaarEmpty
+	}
+
 	if len(aadhaar) != 12 {
-		return false, "Aadhaar number must be exactly 12 digits."
+		return ErrAadhaarLength
 	}
 
-	// Check if the Aadhaar number contains only digits
-	match, _ := regexp.MatchString("^[0-9]+$", aadhaar)
-	if !match {
-		return false, "Aadhaar number must contain only digits."
+	if matched, _ := regexp.MatchString(`^[0-9]{12}$`, aadhaar); !matched {
+		return ErrAadhaarNotNumeric
 	}
 
-	// Check if the first digit is 0 or 1
-	firstDigit := aadhaar[0]
-	if firstDigit == '0' || firstDigit == '1' {
-		return false, "Aadhaar number cannot start with 0 or 1."
+	if aadhaar[0] == '0' || aadhaar[0] == '1' {
+		return ErrAadhaarInvalidStart
 	}
 
-	// Validate using the Luhn Algorithm
 	if !isValidAadhaarLuhn(aadhaar) {
-		return false, "Aadhaar number is invalid based on checksum (Luhn algorithm)."
+		return ErrAadhaarInvalidChecksum
 	}
 
-	return true, "Valid Aadhaar number."
+	return nil
 }
 
 // isValidAadhaarLuhn applies the Luhn algorithm to validate the Aadhaar number checksum
@@ -464,3 +648,99 @@ func RemoveNonAlphanumeric(str string) string {
 
 // str := "Hello, World!123"
 // cleaned := removeNonAlphanumeric(str) // "HelloWorld123"
+
+// ValidatePassword checks password strength based on common security rules
+func ValidatePassword(password string) error {
+	password = strings.TrimSpace(password)
+
+	if password == "" {
+		return ErrPasswordEmpty
+	}
+
+	if len(password) < 8 {
+		return ErrPasswordTooShort
+	}
+
+	if len(password) > 64 {
+		return ErrPasswordTooLong
+	}
+
+	if strings.Contains(password, " ") {
+		return ErrPasswordContainsSpace
+	}
+
+	if match, _ := regexp.MatchString(`[A-Z]`, password); !match {
+		return ErrPasswordMissingUpper
+	}
+
+	if match, _ := regexp.MatchString(`[a-z]`, password); !match {
+		return ErrPasswordMissingLower
+	}
+
+	if match, _ := regexp.MatchString(`[0-9]`, password); !match {
+		return ErrPasswordMissingDigit
+	}
+
+	if match, _ := regexp.MatchString(`[\W_]`, password); !match {
+		return ErrPasswordMissingSpecial
+	}
+
+	return nil
+}
+
+// ValidateUUID checks if the input string is a valid UUID
+func ValidateUUID(id string) error {
+	id = strings.TrimSpace(id)
+
+	if id == "" {
+		return ErrUUIDEmpty
+	}
+
+	// Regex to match UUID v1–v5
+	uuidRegex := `^[a-fA-F0-9]{8}\-[a-fA-F0-9]{4}\-[1-5][a-fA-F0-9]{3}\-[89abAB][a-fA-F0-9]{3}\-[a-fA-F0-9]{12}$`
+	re := regexp.MustCompile(uuidRegex)
+
+	if !re.MatchString(id) {
+		return ErrInvalidUUID
+	}
+
+	return nil
+}
+
+// ValidateEmail checks if the input string is a valid email address
+func ValidateEmail(email string) error {
+	email = strings.TrimSpace(email)
+
+	if email == "" {
+		return ErrEmailEmpty
+	}
+
+	// Basic email regex (simplified but practical)
+	emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(emailRegex)
+
+	if !re.MatchString(email) {
+		return ErrInvalidEmail
+	}
+
+	return nil
+}
+
+// ValidateTime checks if the time is non-zero, not in the future, and not before a minimum threshold
+func ValidateTime(t *time.Time) error {
+	if t.IsZero() {
+		return ErrTimeRequired
+	}
+
+	if t.After(time.Now()) {
+		return ErrTimeInFuture
+	}
+
+	// Optional: Reject dates before 1900
+	minAllowed := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+	if t.Before(minAllowed) {
+		return ErrTimeTooFarPast
+	}
+
+	return nil
+}

@@ -17,7 +17,9 @@ mockery --name=Repository --dir=services/account/internal/repository --output=se
 
 type Repository interface {
 	GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error)
+	GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error)
 	GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
+	CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
 
 	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
 	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
@@ -100,6 +102,55 @@ func (ar *repository) GetFranchiseByID(ctx context.Context, id string) (*model.F
 	return &franchise, nil
 }
 
+func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error) {
+	var method = constants.Methods.GetFranchiseByBusinessName
+	var table = constants.DB.Table_Franchise
+	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
+		return nil, err
+	}
+
+	// Define the columns you need to retrieve
+	columns := []string{
+		"id", "business_name", "logo_url", "sub_domain", "theme_settings",
+		"status", "created_at", "updated_at",
+	}
+
+	// Define the condition map for WHERE clause
+	conditions := map[string]any{
+		"business_name": b_name,
+		"deleted_at":    nil, // Filter deleted records
+	}
+
+	// Prepare query options (if any), you can add Returning or whitelist logic here
+	opts := &dbutils.QueryBuilderOptions{
+		Whilelist: struct {
+			Schemas []string
+			Tables  []string
+			Columns []string
+		}{
+			Schemas: []string{schema},
+			Tables:  []string{table},
+			Columns: columns,
+		},
+	}
+
+	// Use the BuildSelectQuery helper function to build the query
+	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute query and scan the result into the model
+	var franchise model.FranchiseResponse
+	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
+		&franchise.ID, &franchise.BusinessName, &franchise.LogoURL, &franchise.SubDomain,
+		&franchise.ThemeSettings, &franchise.Status, &franchise.CreatedAt, &franchise.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return &franchise, nil
+}
+
 func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error) {
 	var method = constants.Methods.GetFranchiseOwnerByID
 	var table = constants.DB.Table_Owner
@@ -116,6 +167,56 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 	// Define the conditions for WHERE clause
 	conditions := map[string]any{
 		"franchise_id": id, // Use franchise_id for filtering
+	}
+
+	// Prepare query options (if any), you can add Returning or whitelist logic here
+	opts := &dbutils.QueryBuilderOptions{
+		Whilelist: struct {
+			Schemas []string
+			Tables  []string
+			Columns []string
+		}{
+			Schemas: []string{schema},
+			Tables:  []string{table},
+			Columns: columns,
+		},
+	}
+
+	// Use BuildSelectQuery to build the query
+	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the query and scan the result into the model
+	var owner model.FranchiseOwnerResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
+		&owner.ID, &owner.Name, &owner.Gender, &owner.Dob, &owner.MobileNo,
+		&owner.Email, &owner.Address, &owner.AadharNo, &owner.IsVerified, &owner.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &owner, nil
+}
+
+func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error) {
+	var method = constants.Methods.CheckIfOwnerExistsByAadharID
+	var table = constants.DB.Table_Owner
+	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
+		return nil, err
+	}
+
+	// Define the columns you need to retrieve
+	columns := []string{
+		"id", "name", "gender", "dob", "mobile_no", "email",
+		"address", "aadhar_no", "is_verified", "created_at",
+	}
+
+	// Define the conditions for WHERE clause
+	conditions := map[string]any{
+		"aadhar_no": id, // Use franchise_id for filtering
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
