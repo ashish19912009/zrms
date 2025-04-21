@@ -11,11 +11,10 @@ VALUES
     now() -- updated_at
   )
 
-INSERT INTO outlet.owner (id, franchise_id, name, gender, dob, mobile_no, email, address, aadhar_no, is_verified, theme_settings, status, created_at, updated_at)
+INSERT INTO outlet.owners (id, name, gender, dob, mobile_no, email, address, aadhar_no, is_verified, status, created_at, updated_at)
 VALUES
   (
-    gen_random_uuid(), -- UUID for owner ID
-    '6e5aea41-fb56-4d99-a0f5-22a7d5e02767', -- franchise_id linked to the above franchise
+    gen_random_uuid(), -- UUID for owner ID -- franchise_id linked to the above franchise
     'Ashish Kumar Rena', -- Owner Name
     'male', -- Gender
     '1990-01-01'::TIMESTAMPTZ, -- Date of Birth (example)
@@ -24,7 +23,6 @@ VALUES
     'Address Line 1, City, Country', -- Owner address (fill in details)
     '123456789012', -- Aadhar number (make sure it's unique)
     true, -- Verified (true or false)
-    '{}'::jsonb, -- theme_settings (empty for now)
     'active', -- Status (active, inactive, suspended)
     now(), -- created_at
     now() -- updated_at

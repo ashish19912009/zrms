@@ -13,61 +13,65 @@ var EnvVariable = struct {
 
 // List of Methods
 var Methods = struct {
-	CheckDBConn              string
-	CreateFranchise          string
-	CreateOwner              string
-	UpdateFranchise          string
-	UpdateFranchiseStatus    string
-	DeleteFranchise          string
-	GetFranchiseByID         string
-	GetAllFranchises         string
-	GetFranchiseOwner        string
-	AddFranchiseDocument     string
-	UpdateFranchiseDocument  string
-	GetAllFranchiseDocuments string
-	GetAllFranchiseAccounts  string
-	CreateFranchiseAccount   string
-	UpdateFranchiseAccount   string
-	GetAccountByID           string
-	GetFranchiseAddressByID  string
-	AddFranchiseAddress      string
-	UpdateFranchiseAddress   string
-	AddFranchiseRole         string
-	UpdateFranchiseRole      string
-	GetAllFranchiseRoles     string
-	AddPermissionsToRole     string
-	UpdatePermissionsToRole  string
-	GetAllPermissionsToRole  string
-	GetFranchiseOwnerByID    string
-	GetFranchiseAccountByID  string
+	CheckDBConn                  string
+	CreateFranchise              string
+	CreateOwner                  string
+	UpdateFranchise              string
+	UpdateFranchiseStatus        string
+	DeleteFranchise              string
+	GetFranchiseByID             string
+	GetFranchiseByBusinessName   string
+	GetAllFranchises             string
+	GetFranchiseOwner            string
+	AddFranchiseDocument         string
+	UpdateFranchiseDocument      string
+	GetAllFranchiseDocuments     string
+	GetAllFranchiseAccounts      string
+	CreateFranchiseAccount       string
+	UpdateFranchiseAccount       string
+	GetAccountByID               string
+	GetFranchiseAddressByID      string
+	AddFranchiseAddress          string
+	UpdateFranchiseAddress       string
+	AddFranchiseRole             string
+	UpdateFranchiseRole          string
+	GetAllFranchiseRoles         string
+	AddPermissionsToRole         string
+	UpdatePermissionsToRole      string
+	GetAllPermissionsToRole      string
+	GetFranchiseOwnerByID        string
+	GetFranchiseAccountByID      string
+	CheckIfOwnerExistsByAadharID string
 }{
-	CheckDBConn:              "CheckDBConn",
-	CreateFranchise:          "CreateFranchise",
-	CreateOwner:              "CreateOwner",
-	UpdateFranchise:          "UpdateFranchise",
-	UpdateFranchiseStatus:    "UpdateFranchiseStatus",
-	DeleteFranchise:          "DeleteFranchise",
-	GetFranchiseByID:         "GetFranchiseByID",
-	GetAllFranchises:         "GetAllFranchises",
-	GetFranchiseOwner:        "GetFranchiseOwner",
-	AddFranchiseDocument:     "AddFranchiseDocument",
-	UpdateFranchiseDocument:  "UpdateFranchiseDocument",
-	GetAllFranchiseDocuments: "GetAllFranchiseDocuments",
-	GetAllFranchiseAccounts:  "GetAllFranchiseAccounts",
-	CreateFranchiseAccount:   "CreateFranchiseAccount",
-	UpdateFranchiseAccount:   "UpdateFranchiseAccount",
-	GetAccountByID:           "GetAccountByID",
-	GetFranchiseAddressByID:  "GetFranchiseAddressByID",
-	AddFranchiseAddress:      "AddFranchiseAddress",
-	UpdateFranchiseAddress:   "UpdateFranchiseAddress",
-	AddFranchiseRole:         "AddFranchiseRole",
-	UpdateFranchiseRole:      "UpdateFranchiseRole",
-	GetAllFranchiseRoles:     "GetAllFranchiseRoles",
-	AddPermissionsToRole:     "AddPermissionsToRole",
-	UpdatePermissionsToRole:  "UpdatePermissionsToRole",
-	GetAllPermissionsToRole:  "GetAllPermissionsToRole",
-	GetFranchiseOwnerByID:    "GetFranchiseOwnerByID",
-	GetFranchiseAccountByID:  "GetFranchiseAccountByID",
+	CheckDBConn:                  "CheckDBConn",
+	CreateFranchise:              "CreateFranchise",
+	CreateOwner:                  "CreateOwner",
+	UpdateFranchise:              "UpdateFranchise",
+	UpdateFranchiseStatus:        "UpdateFranchiseStatus",
+	DeleteFranchise:              "DeleteFranchise",
+	GetFranchiseByID:             "GetFranchiseByID",
+	GetFranchiseByBusinessName:   "GetFranchiseByBusinessName",
+	GetAllFranchises:             "GetAllFranchises",
+	GetFranchiseOwner:            "GetFranchiseOwner",
+	AddFranchiseDocument:         "AddFranchiseDocument",
+	UpdateFranchiseDocument:      "UpdateFranchiseDocument",
+	GetAllFranchiseDocuments:     "GetAllFranchiseDocuments",
+	GetAllFranchiseAccounts:      "GetAllFranchiseAccounts",
+	CreateFranchiseAccount:       "CreateFranchiseAccount",
+	UpdateFranchiseAccount:       "UpdateFranchiseAccount",
+	GetAccountByID:               "GetAccountByID",
+	GetFranchiseAddressByID:      "GetFranchiseAddressByID",
+	AddFranchiseAddress:          "AddFranchiseAddress",
+	UpdateFranchiseAddress:       "UpdateFranchiseAddress",
+	AddFranchiseRole:             "AddFranchiseRole",
+	UpdateFranchiseRole:          "UpdateFranchiseRole",
+	GetAllFranchiseRoles:         "GetAllFranchiseRoles",
+	AddPermissionsToRole:         "AddPermissionsToRole",
+	UpdatePermissionsToRole:      "UpdatePermissionsToRole",
+	GetAllPermissionsToRole:      "GetAllPermissionsToRole",
+	GetFranchiseOwnerByID:        "GetFranchiseOwnerByID",
+	GetFranchiseAccountByID:      "GetFranchiseAccountByID",
+	CheckIfOwnerExistsByAadharID: "CheckIfOwnerExistsByAadharID",
 }
 
 const (
@@ -155,6 +159,8 @@ const (
 	UnauthorizedReturningColumn = "unauthorized returning column: %s"
 	UnauthorizedJoinTable       = "unauthorized join table"
 	FailedToBeginTransaction    = "failed to begin transaction: %w"
+	BusinessAlreadyExist        = "business registered with same name for the same franchise owner"
+	FranchiseOwnerExist         = "a person is already registered with the same aadhar no"
 
 	// Token layer
 	ErrInvalidToken            = "invalid token"

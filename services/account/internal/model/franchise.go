@@ -3,23 +3,25 @@ package model
 import "time"
 
 type Franchise struct {
-	BusinessName  string                 `json:"business_name"`
-	LogoURL       string                 `json:"logo_url"`
-	SubDomain     string                 `json:"sub_domain"`
-	ThemeSettings map[string]interface{} `json:"theme_settings"`
-	Status        string                 `json:"status"`
+	BusinessName       string                 `json:"business_name"`
+	LogoURL            string                 `json:"logo_url"`
+	SubDomain          string                 `json:"sub_domain"`
+	ThemeSettings      map[string]interface{} `json:"theme_settings"`
+	Status             string                 `json:"status"`
+	Franchise_Owner_id string                 `json:"franchise_owner_id"`
 }
 
 type FranchiseResponse struct {
-	ID            string                 `json:"id"`
-	BusinessName  string                 `json:"business_name"`
-	LogoURL       string                 `json:"logo_url"`
-	SubDomain     string                 `json:"sub_domain"`
-	ThemeSettings map[string]interface{} `json:"theme_settings"`
-	Status        string                 `json:"status"`
-	CreatedAt     *time.Time             `json:"created_at"`
-	UpdatedAt     *time.Time             `json:"updated_at"`
-	DeletedAt     *time.Time             `json:"deleted_at,omitempty"` // Nullable field for soft deletion
+	ID                 string                 `json:"id"`
+	BusinessName       string                 `json:"business_name"`
+	LogoURL            string                 `json:"logo_url"`
+	SubDomain          string                 `json:"sub_domain"`
+	ThemeSettings      map[string]interface{} `json:"theme_settings"`
+	Status             string                 `json:"status"`
+	Franchise_Owner_id string                 `json:"franchise_owner_id"`
+	CreatedAt          *time.Time             `json:"created_at"`
+	UpdatedAt          *time.Time             `json:"updated_at"`
+	DeletedAt          *time.Time             `json:"deleted_at,omitempty"` // Nullable field for soft deletion
 }
 
 type CommonReturn struct {
@@ -145,3 +147,9 @@ type RoleToPermissionsComplete struct {
 	CreatedAt              *time.Time `json:"created_at"`
 	UpdatedAt              *time.Time `json:"updated_at"`
 }
+
+// func (fo *FranchiseOwner) ToResponse() *FranchiseOwnerResponse{
+// 	return &FranchiseOwnerResponse{
+// 		ID: fo.ID,
+// 	}
+// }
