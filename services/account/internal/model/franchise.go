@@ -28,10 +28,6 @@ type CommonReturn struct {
 	ID string `json:"id"`
 }
 
-type CommonReturn struct {
-	ID string `json:"id"`
-}
-
 type FranchiseDocument struct {
 	FranchiseID    string `json:"franchise_id"`
 	DocumentTypeID string `json:"document_type_id"`
