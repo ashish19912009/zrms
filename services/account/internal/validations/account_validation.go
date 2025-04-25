@@ -2,6 +2,7 @@ package validations
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -69,16 +70,19 @@ var (
 	ErrTimeRequired             = errors.New("time value is required")
 	ErrTimeInFuture             = errors.New("time must not be in the future")
 	ErrTimeTooFarPast           = errors.New("time is too far in the past")
-	ErrInvalidGender            = errors.New("Invalid gender selected")
-	ErrDateFormatNotRecongnized = errors.New("Date format not recognized")
-	ErrDateNotBeFuture          = errors.New("DOB cannot be in the future")
-	ErrDateInNegative           = errors.New("DOB results in negative age")
-	ErrDateUnrealistic          = errors.New("Age seems unrealistic (>150 years)")
+	ErrInvalidGender            = errors.New("invalid gender selected")
+	ErrDateFormatNotRecongnized = errors.New("date format not recognized")
+	ErrDateNotBeFuture          = errors.New("dob cannot be in the future")
+	ErrDateInNegative           = errors.New("dob results in negative age")
+	ErrDateUnrealistic          = errors.New("age seems unrealistic (>150 years)")
 	ErrAadhaarEmpty             = errors.New("aadhaar number is required")
 	ErrAadhaarLength            = errors.New("aadhaar number must be exactly 12 digits")
 	ErrAadhaarNotNumeric        = errors.New("aadhaar number must contain only digits")
 	ErrAadhaarInvalidStart      = errors.New("aadhaar number cannot start with 0 or 1")
 	ErrAadhaarInvalidChecksum   = errors.New("aadhaar number is invalid based on checksum (Verhoeff algorithm)")
+	ErrInvalidPincode           = errors.New("invalid pincode: must be 6 digits")
+	ErrInvalidLatitude          = errors.New("invalid latitude: must be between -90 and 90")
+	ErrInvalidLongitude         = errors.New("invalid longitude: must be between -180 and 180")
 )
 
 // Length check (ValidateLength)
@@ -188,7 +192,7 @@ func ValidateFranchiseOwner(f_owner *model.FranchiseOwner) error {
 	if err := ValidateNotEmpty(dob); err != nil {
 		return err
 	}
-	if err := validateDOB(dob); err != nil {
+	if err := ValidateDOB(dob); err != nil {
 		return err
 	}
 	// validate mobile no
@@ -326,6 +330,38 @@ func ValidateFranchiseAccounts(acc *model.FranchiseAccount) error {
 	return nil
 }
 
+func ValidateFranchiseDocument(f_doc *model.FranchiseDocument) error {
+	id := f_doc.FranchiseID
+	docTypeID := f_doc.DocumentTypeID
+	docURL := f_doc.DocumentURL
+	uploadedBy := f_doc.UploadedBy
+	status := f_doc.Status
+	remark := f_doc.Remark
+
+	if err := ValidateUUID(id); err != nil {
+		return err
+	}
+	if err := ValidateUUID(docTypeID); err != nil {
+		return err
+	}
+	if err := ValidateLength(docURL, 5, 200); err != nil {
+		return err
+	}
+	if err := ValidateURL(docURL); err != nil {
+		return err
+	}
+	if err := ValidateNotEmpty(uploadedBy); err != nil {
+		return err
+	}
+	if err := ValidateStatus(status); err != nil {
+		return err
+	}
+	if err := ValidateNoRestrictedWords(remark, []string{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func ValidateMobileNo(mobile string) error {
 	if strings.TrimSpace(mobile) == "" {
 		return errors.New(ErrMobileRequired.Error())
@@ -356,7 +392,7 @@ func ValidateGenders(gender string) error {
 }
 
 // validateDOB validates the given date of birth string against multiple patterns
-func validateDOB(dobStr string) error {
+func ValidateDOB(dobStr string) error {
 	// Define possible date formats
 	dateFormats := []string{
 		"2006-01-02", "02-01-2006", "01-02-2006", // YYYY-MM-DD, DD-MM-YYYY, MM-DD-YYYY
@@ -742,5 +778,45 @@ func ValidateTime(t *time.Time) error {
 		return ErrTimeTooFarPast
 	}
 
+	return nil
+}
+
+// ValidatePincode checks if a given pincode is valid (Indian format: 6-digit number)
+func ValidatePincode(pincode string) error {
+	// Regular expression for 6-digit PIN code (can start with 0 if needed)
+	match, err := regexp.MatchString(`^\d{6}$`, pincode)
+	if err != nil {
+		return err
+	}
+	if !match {
+		return ErrInvalidPincode
+	}
+	return nil
+}
+
+// ValidateLatitude checks if the latitude is in the valid range
+func ValidateLatitude(lat float64) error {
+	if lat < -90 || lat > 90 {
+		return ErrInvalidLatitude
+	}
+	return nil
+}
+
+// ValidateLongitude checks if the longitude is in the valid range
+func ValidateLongitude(lon float64) error {
+	if lon < -180 || lon > 180 {
+		return ErrInvalidLongitude
+	}
+	return nil
+}
+
+// ValidateCoordinates checks both latitude and longitude
+func ValidateCoordinates(lat, lon float64) error {
+	if err := ValidateLatitude(lat); err != nil {
+		return fmt.Errorf("latitude validation failed: %w", err)
+	}
+	if err := ValidateLongitude(lon); err != nil {
+		return fmt.Errorf("longitude validation failed: %w", err)
+	}
 	return nil
 }

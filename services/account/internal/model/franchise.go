@@ -24,8 +24,29 @@ type FranchiseResponse struct {
 	DeletedAt          *time.Time             `json:"deleted_at,omitempty"` // Nullable field for soft deletion
 }
 
-type CommonReturn struct {
-	ID string `json:"id"`
+type DeleteFranchiseRequest struct {
+	ID      string `json:"id"`
+	AdminID string `json:"admin_id"`
+}
+
+type FranchiseStatusRequest struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
+type AddResponse struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type UpdateResponse struct {
+	ID        string    `json:"id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type DeletedResponse struct {
+	ID        string    `json:"id"`
+	DeletedAt time.Time `json:"deleted_at"`
 }
 
 type FranchiseDocument struct {
@@ -96,7 +117,7 @@ type FranchiseOwner struct {
 	Email      string `json:"email"`
 	Address    string `json:"address"`
 	AadharNo   string `json:"aadhar_no"`
-	IsVerified string `json:"is_verified"`
+	IsVerified bool   `json:"is_verified"`
 	Status     string `json:"status"`
 }
 
@@ -148,8 +169,9 @@ type RoleToPermissionsComplete struct {
 	UpdatedAt              *time.Time `json:"updated_at"`
 }
 
-// func (fo *FranchiseOwner) ToResponse() *FranchiseOwnerResponse{
-// 	return &FranchiseOwnerResponse{
-// 		ID: fo.ID,
-// 	}
-// }
+func (fo *FranchiseOwner) ToResponse(ID string, CreatedAt time.Time) *AddResponse {
+	return &AddResponse{
+		ID:        ID,
+		CreatedAt: CreatedAt,
+	}
+}

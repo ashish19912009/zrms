@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package authz;
+
+import "google/protobuf/struct.proto";
+
+option go_package=  "./pb";
+
+service AuthzService {
+  rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc AddPolicy (AddPolicyRequest) returns (AddPolicyResponse);
+  rpc RemovePolicy (RemovePolicyRequest) returns (RemovePolicyResponse);
+  rpc ListPolicies (ListPoliciesRequest) returns (ListPoliciesResponse);
+}
+
+message CheckPermissionRequest {
+  string subject = 1;  // user or role
+  string action = 2;
+  string resource = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+message AddPolicyRequest {
+  string subject = 1;
+  string action = 2;
+  string resource = 3;
+}
+
+message AddPolicyResponse {
+  bool success = 1;
+}
+
+// Other request/response messages...

@@ -10,6 +10,23 @@ option go_package=  "./pb";
  protoc --go_out=../ --go-grpc_out=../ account.proto
 **/
 
+// Common response after adding data
+message AddResponse{
+    string id           = 1;
+    string created_at   = 2;
+}
+
+// Common response after updating data
+message UpdateResponse{
+    string id           = 1;
+    string updated_at   = 2;
+}
+
+message DeletedResponse{
+    string id           = 1;
+    string deleted_at   = 2;
+}
+
 // Pagination messages
 message PaginationRequest {
     int32 page = 1;
@@ -24,9 +41,13 @@ message PaginationRequest {
 
 // Message representing an Franchise in the system
 message FranchiseInput {
-    string business_name    = 1;
-    string logo_url         = 2;
-    google.protobuf.Struct theme_settings   = 3;
+    string business_name                    = 1;
+    string logo_url                         = 2;
+    string subdomain                        = 3;
+    google.protobuf.Struct theme_settings   = 4;
+    string status                           = 5;
+    string franchise_owner_id               = 6;
+
 }
 
 // Message representing Franchise document in the system
@@ -66,11 +87,9 @@ message FranchiseOwnerInput {
 
 message FranchiseByIDInput {
     string id                           = 1;
-    string sub_domain                   = 2;
-    FranchiseInput franchise_details    = 3;
-    string status                       = 4;
-    string created_at                   = 5;
-    string updated_at                   = 6; 
+    FranchiseInput franchise_details    = 2;
+    string created_at                   = 3;
+    string updated_at                   = 4; 
 }
 
 // Message representing an Account in the system
@@ -88,12 +107,22 @@ message AccountInput {
 
 message AddFranchiseRequest {
     FranchiseInput franchise_details    = 1;
-    FranchiseOwnerInput owner_details   = 2;
+}
+
+message UpdateFranchiseRequest {
+    string id                           = 1;
+    FranchiseInput franchise_details    = 2;
+}
+
+message UpdateFranchiseStatusRequest{
+    string id       = 1;
+    string status   = 2;
 }
 
 // -> Response
 message AddFranchiseResponse {
-    string id = 1;
+    string id           = 1;
+    string created_at   = 2;
 }
 
 // DELETE
@@ -102,19 +131,9 @@ message DeleteFranchiseRequest {
     string admin_id = 2;
 }
 
-//-> Response
-message DeleteFranchiseResponse {
-    bool   status       = 1;
-}
-
 message AddFranchiseDocumentRequest {
     string franchise_id             = 1;
     FranchiseDocumentInput f_doc    = 2;
-}
-
-// -> Response
-message AddFranchiseDocumentResponse {
-    string id                           = 1;
 }
 
 message UpdateFranchiseDocumentRequest {
@@ -123,28 +142,15 @@ message UpdateFranchiseDocumentRequest {
     FranchiseDocumentInput f_doc    = 3;
 }
 
-message UpdateFranchiseDocumentResponse {
-    string id   = 1;
-}
-
 // DELETE
 message DeleteFranchiseDocumentRequest {
     string id           = 1;
     string franchise_id = 2;
 }
 
-//-> Response
-message DeleteFranchiseDocumentResponse {
-    bool status         = 1;
-}
-
 message AddFranchiseAddressRequest {
     string franchise_id             = 1;
     FranchiseAddressInput address   = 2;
-}
-
-message AddFranchiseAddressResponse {
-    string id                       = 1;
 }
 
 message UpdateFranchiseAddressRequest {
@@ -153,8 +159,8 @@ message UpdateFranchiseAddressRequest {
     FranchiseAddressInput address   = 3;
 }
 
-message UpdateFranchiseAddressResponse {
-    string id                       = 1;
+message AddFranchiseOwnerRequest{
+    FranchiseOwnerInput owner   = 1;
 }
 
 message UpdateFranchiseOwnerRequest{
@@ -163,20 +169,11 @@ message UpdateFranchiseOwnerRequest{
     FranchiseOwnerInput owner   = 3;
 }
 
-message UpdateFranchiseOwnerResponse{
-    string id                   = 1;
-}
-
 // POST
 message AddFranchiseAccountRequest {
     string franchise_id         = 1;
     AccountInput account        = 2;
     string role_id              = 3;
-}
-
-//-> Response
-message AddFranchiseAccountResponse {
-    string id                   = 1;
 }
 
 // PUT
@@ -187,20 +184,10 @@ message UpdateFranchiseAccountRequest {
     string role_id              = 4;
 }
 
-//-> Response
-message UpdateFranchiseAccountResponse {
-    string id                   = 1;
-}
-
 // DELETE
 message DeleteFranchiseAccountRequest {
     string id                   = 1;
     string franchise_id         = 2;
-}
-
-//-> Response
-message DeleteFranchiseAccountResponse {
-    bool status         = 1;
 }
 
 // GET
@@ -310,25 +297,29 @@ message GetFranchiseAccountsResponse {
 
 service AccountService {
     rpc CreateFranchise(AddFranchiseRequest)    returns (AddFranchiseResponse);
-    rpc DeleteFranchise(DeleteFranchiseRequest) returns(DeleteFranchiseResponse);
+    rpc UpdateFranchise(UpdateFranchiseRequest) returns (UpdateResponse);
+    rpc UpdateFranchiseStatus(UpdateFranchiseStatusRequest) returns (UpdateResponse);
+    rpc DeleteFranchise(DeleteFranchiseRequest) returns(DeletedResponse);
     rpc GetAllFranchises(GetFranchisesRequest) returns(GetFranchisesResponse);
     rpc GetFranchiseByID(GetFranchiseByIDRequest) returns(GetFranchiseByIDResponse);
 
-    rpc CreateFranchiseDocument(AddFranchiseDocumentRequest) returns (AddFranchiseDocumentResponse);
+    rpc CreateFranchiseDocument(AddFranchiseDocumentRequest) returns (AddResponse);
     rpc GetFranchiseDocumentByID(GetFranchiseDocumentRequest) returns(GetFranchiseDocumentResponse);
-    rpc UpdateFranchiseDocumentByID(UpdateFranchiseDocumentRequest) returns(UpdateFranchiseDocumentResponse);
-    rpc DeleteFranchiseDocumentByID(DeleteFranchiseDocumentRequest) returns(DeleteFranchiseDocumentResponse);
+    rpc UpdateFranchiseDocumentByID(UpdateFranchiseDocumentRequest) returns(UpdateResponse);
+    rpc DeleteFranchiseDocumentByID(DeleteFranchiseDocumentRequest) returns(DeletedResponse);
    
-    rpc CreateFranchiseAddress(AddFranchiseAddressRequest) returns (AddFranchiseAddressResponse);
+    rpc CreateFranchiseAddress(AddFranchiseAddressRequest) returns (AddResponse);
     rpc GetFranchiseAddressByID(GetFranchiseAddressRequest) returns (GetFranchiseAddressResponse);
-    rpc UpdateFranchiseAddressByID(UpdateFranchiseAddressRequest) returns (UpdateFranchiseAddressResponse);
+    rpc UpdateFranchiseAddressByID(UpdateFranchiseAddressRequest) returns (UpdateResponse);
 
-    rpc UpdateFranchiseOwnerByID(UpdateFranchiseOwnerRequest) returns (UpdateFranchiseOwnerResponse);
+
+    rpc CreateFranchiseOwner(AddFranchiseOwnerRequest) returns (AddResponse);
+    rpc UpdateFranchiseOwnerByID(UpdateFranchiseOwnerRequest) returns (UpdateResponse);
     rpc GetFranchiseOwnerByID(GetFranchiseOwnerRequest) returns (GetFranchiseOwnerResponse);
 
-    rpc CreateFranchiseAccount(AddFranchiseAccountRequest) returns (AddFranchiseAccountResponse);
+    rpc CreateFranchiseAccount(AddFranchiseAccountRequest) returns (AddResponse);
     rpc GetFranchiseAccountByID(GetFranchiseAccountByIDRequest) returns (GetFranchiseAccountByIDResponse);
     rpc GetFranchiseAccounts(GetFranchiseAccountsRequest) returns (GetFranchiseAccountsResponse);
-    rpc UpdateFranchiseAccountByID(UpdateFranchiseAccountRequest) returns (UpdateFranchiseAccountResponse);
-    rpc DeleteFranchiseAccountByID(DeleteFranchiseAccountRequest) returns (DeleteFranchiseAccountResponse);
+    rpc UpdateFranchiseAccountByID(UpdateFranchiseAccountRequest) returns (UpdateResponse);
+    rpc DeleteFranchiseAccountByID(DeleteFranchiseAccountRequest) returns (DeletedResponse);
 }

@@ -32,13 +32,13 @@ const (
 )
 
 type AdminRepository interface {
-	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.FranchiseOwnerResponse, error)
-	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.FranchiseOwnerResponse, error)
+	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error)
+	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error)
 
-	CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.FranchiseResponse, error)
-	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.FranchiseResponse, error)
-	UpdateFranchiseStatus(ctx context.Context, id string, status string) (bool, error)
-	DeleteFranchise(ctx context.Context, id string) (bool, error)
+	CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error)
+	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error)
+	UpdateFranchiseStatus(ctx context.Context, id string, status string) (*model.UpdateResponse, error)
+	DeleteFranchise(ctx context.Context, id string) (*model.DeletedResponse, error)
 
 	GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error)
 }
@@ -53,7 +53,7 @@ func NewAdminRepository(db *sql.DB) AdminRepository {
 	}
 }
 
-func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.FranchiseOwnerResponse, error) {
+func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error) {
 	var (
 		method = constants.Methods.CreateOwner
 		table  = constants.DB.Table_Owner
@@ -101,16 +101,26 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 	if err != nil {
 		return nil, err
 	}
-	var account = &model.FranchiseOwnerResponse{}
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{owner.Name, owner.Gender, owner.Dob, owner.MobileNo, owner.Email, owner.Address, owner.AadharNo, owner.IsVerified, owner.Status}, &account)
+	// var account = &model.FranchiseOwnerResponse{}
+	// err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{owner.Name, owner.Gender, owner.Dob, owner.MobileNo, owner.Email, owner.Address, owner.AadharNo, owner.IsVerified, owner.Status}, &account)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return account, nil
+	var createdID string
+	var created_at time.Time
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{owner.Name, owner.Gender, owner.Dob, owner.MobileNo, owner.Email, owner.Address, owner.AadharNo, owner.IsVerified, owner.Status},
+		createdID,
+		created_at,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	return account, nil
+	return owner.ToResponse(createdID, created_at), nil
 }
 
-func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.FranchiseOwnerResponse, error) {
+func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error) {
 	var (
 		method = constants.Methods.CreateOwner
 		table  = constants.DB.Table_Owner
@@ -161,7 +171,7 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 		return nil, err
 	}
 
-	var updated model.FranchiseOwnerResponse
+	var updated model.UpdateResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
 		&updated,
 	)
@@ -172,7 +182,7 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 	return &updated, nil
 }
 
-func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput *model.Franchise) (*model.FranchiseResponse, error) {
+func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput *model.Franchise) (*model.AddResponse, error) {
 	var (
 		method = constants.Methods.CreateFranchise
 		table  = constants.DB.Table_Franchise
@@ -195,7 +205,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput 
 		return nil, err
 	}
 
-	var franchise model.FranchiseResponse
+	var franchise model.AddResponse
 	if err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query,
 		[]any{id, franchiseInput.BusinessName, franchiseInput.LogoURL, franchiseInput.SubDomain, franchiseInput.ThemeSettings, franchiseInput.Status},
 		&franchise,
@@ -206,7 +216,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput 
 	return &franchise, nil
 }
 
-func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.FranchiseResponse, error) {
+func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchise
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -235,10 +245,10 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 		return nil, err
 	}
 
-	var updated model.FranchiseResponse
+	var updated model.UpdateResponse
 	err = dbutils.ExecuteAndScanRow(ctx, constants.Methods.UpdateFranchise, ar.db, query,
 		args,
-		&updated.ID, &updated.BusinessName, &updated.LogoURL, &updated.SubDomain, &updated.ThemeSettings, &updated.Status, &updated.UpdatedAt,
+		&updated.ID, &updated.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -246,12 +256,12 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 	return &updated, nil
 }
 
-func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string, status string) (bool, error) {
+func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string, status string) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchiseStatus
 	var table = constants.DB.Table_Franchise
 	// Check database connection
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// Prepare columns and condition
@@ -276,7 +286,7 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 		opts,
 	)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// Prepare actual values matching the order of columns + conditions
@@ -285,19 +295,22 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 	// Execute the query and scan returned ID
 	var updated_franchise *model.FranchiseResponse
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args, &updated_franchise); err != nil {
-		return false, err
+		return nil, err
 	}
 	if updated_franchise.ID == id && updated_franchise.Status == status {
-		return true, nil
+		return &model.UpdateResponse{
+			ID:        updated_franchise.ID,
+			UpdatedAt: *updated_franchise.UpdatedAt,
+		}, nil
 	}
-	return false, nil
+	return nil, nil
 }
 
-func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (bool, error) {
+func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*model.DeletedResponse, error) {
 	var method = constants.Methods.DeleteFranchise
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// Columns to update
@@ -322,7 +335,7 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (boo
 		opts,
 	)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// Provide actual args: deleted_at value and id
@@ -331,9 +344,12 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (boo
 	// Execute the query
 	var deletedID string
 	if err := dbutils.ExecuteAndScanRow(ctx, constants.Methods.DeleteFranchise, ar.db, query, args, &deletedID); err != nil {
-		return false, err
+		return nil, err
 	}
-	return true, nil
+	return &model.DeletedResponse{
+		ID:        id,
+		DeletedAt: time.Now(),
+	}, nil
 }
 
 func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error) {

@@ -26,15 +26,15 @@ type Repository interface {
 	GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
 	GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
 
-	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.CommonReturn, error)
+	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error)
 	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error)
 	GetAllFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponseComplete, error)
 
-	AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.CommonReturn, error)
+	AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.AddResponse, error)
 	UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error)
 	GetFranchiseAddressByID(ctx context.Context, id string) (*model.FranchiseAddressResponse, error)
 
-	AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.CommonReturn, error)
+	AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.AddResponse, error)
 	UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error)
 	GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error)
 
@@ -525,7 +525,7 @@ func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, id string) ([
 	return accounts, nil
 }
 
-func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.CommonReturn, error) {
+func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error) {
 	var method = constants.Methods.AddFranchiseDocument
 	var table = constants.DB.Table_Document_Types
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -566,7 +566,7 @@ func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.Franc
 		return nil, err
 	}
 	// Scan result into response struct
-	var account = &model.CommonReturn{}
+	var account = &model.AddResponse{}
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{doc.FranchiseID, doc.DocumentTypeID, doc.DocumentURL, doc.UploadedBy, doc.Status, doc.Remark}, &account.ID)
 	if err != nil {
 		return nil, err
@@ -721,7 +721,7 @@ func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) (
 	return docs, nil
 }
 
-func (ar *repository) AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.CommonReturn, error) {
+func (ar *repository) AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.AddResponse, error) {
 	var method = constants.Methods.AddFranchiseAddress
 	var table = constants.DB.Table_Franchise_addresses
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -765,7 +765,7 @@ func (ar *repository) AddFranchiseAddress(ctx context.Context, addr *model.Franc
 		return nil, err
 	}
 	// Scan result into response struct
-	var address = &model.CommonReturn{}
+	var address = &model.AddResponse{}
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{addr.FranchiseID, addr.AddressLine, addr.City, addr.State, addr.Country, addr.Pincode, addr.Latitude, addr.Longitude, addr.IsVerified}, &address.ID)
 	if err != nil {
 		return nil, err
@@ -898,7 +898,7 @@ func (ar *repository) GetFranchiseAddressByID(ctx context.Context, id string) (*
 	return &addr, nil
 }
 
-func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.CommonReturn, error) {
+func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.AddResponse, error) {
 	var method = constants.Methods.AddFranchiseRole
 	var table = constants.DB.Table_Roles
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -937,7 +937,7 @@ func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.Franchis
 		return nil, err
 	}
 	// Scan result into response struct
-	var newRole = &model.CommonReturn{}
+	var newRole = &model.AddResponse{}
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{role.FranchiseID, role.Name, role.Description, role.IsDefault}, &newRole.ID)
 	if err != nil {
 		return nil, err

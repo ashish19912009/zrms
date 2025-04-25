@@ -42,6 +42,8 @@ var Methods = struct {
 	GetFranchiseOwnerByID        string
 	GetFranchiseAccountByID      string
 	CheckIfOwnerExistsByAadharID string
+	CreateNewOwner               string
+	UpdateOwner                  string
 }{
 	CheckDBConn:                  "CheckDBConn",
 	CreateFranchise:              "CreateFranchise",
@@ -72,6 +74,8 @@ var Methods = struct {
 	GetFranchiseOwnerByID:        "GetFranchiseOwnerByID",
 	GetFranchiseAccountByID:      "GetFranchiseAccountByID",
 	CheckIfOwnerExistsByAadharID: "CheckIfOwnerExistsByAadharID",
+	CreateNewOwner:               "CreateNewOwner",
+	UpdateOwner:                  "UpdateOwner",
 }
 
 const (
@@ -80,6 +84,7 @@ const (
 )
 
 const (
+	Handler    = "handler"
 	Repository = "repository"
 )
 
@@ -161,6 +166,13 @@ const (
 	FailedToBeginTransaction    = "failed to begin transaction: %w"
 	BusinessAlreadyExist        = "business registered with same name for the same franchise owner"
 	FranchiseOwnerExist         = "a person is already registered with the same aadhar no"
+	InvalidTimestamp            = "invalid timestamp format: %v"
+	FailedToCreateOwner         = "failed to create franchise owner: %v"
+	FailedToCreateFranchsie     = "failed to create franchise : %v"
+	MappingFromProtoToModel     = "something went wrong while mapping proto to model"
+	MappingFromModelToProto     = "something went wrong while mapping model to proto"
+	SomethinWentWrongOnNew      = "somthing went wrong while creating: %s"
+	SomethinWentWrongOnUpdate   = "somthing went wrong while updating: %s"
 
 	// Token layer
 	ErrInvalidToken            = "invalid token"
