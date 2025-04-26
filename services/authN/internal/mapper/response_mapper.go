@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	"github.com/ashish19912009/services/auth/internal/models"
-	"github.com/ashish19912009/services/auth/pb"
+	"github.com/ashish19912009/zrms/services/authN/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/pb"
 )
 
 func LoginResponse(user *models.User, accessToken, refreshToken string) *pb.LoginResponse {

@@ -1,4 +1,4 @@
-module github.com/ashish19912009/services/auth
+module github.com/ashish19912009/zrms/services/authN
 
 go 1.23.5
 

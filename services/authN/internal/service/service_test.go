@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ashish19912009/services/auth/internal/constants"
-	"github.com/ashish19912009/services/auth/internal/models"
-	"github.com/ashish19912009/services/auth/pb"
-	mockRepo "github.com/ashish19912009/services/auth/test/mocks/repository"
+	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/pb"
+	mockRepo "github.com/ashish19912009/zrms/services/authN/test/mocks/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

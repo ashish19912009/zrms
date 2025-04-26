@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/ashish19912009/services/auth/internal/constants"
-	"github.com/ashish19912009/services/auth/internal/logger"
+	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 	"gopkg.in/yaml.v3"
 )
 

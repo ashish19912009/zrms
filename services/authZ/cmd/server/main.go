@@ -2,50 +2,33 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
+	"net"
 
-	"github.com/yourorg/authz-service/configs"
-	"github.com/yourorg/authz-service/internal/app/authz"
-	"github.com/yourorg/authz-service/internal/infrastructure/grpc"
-	"github.com/yourorg/authz-service/internal/infrastructure/opa"
-	"github.com/yourorg/authz-service/internal/infrastructure/postgres"
+	"github.com/ashish19912009/zrms/services/authZ/internal/server"
+	"google.golang.org/grpc"
+	"honnef.co/go/tools/config"
 )
 
 func main() {
-	// Load configuration
-	cfg, err := configs.LoadConfig("configs/config.yaml")
+	// Load config
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("failed to load config: %v", err)
 	}
-
-	// Initialize OPA client
-	opaClient, err := opa.NewClient(cfg.OPAPolicyPath)
-	if err != nil {
-		log.Fatalf("Failed to initialize OPA client: %v", err)
-	}
-
-	// Initialize PostgreSQL repository
-	repo, err := postgres.NewPolicyRepository(cfg.PostgresDSN)
-	if err != nil {
-		log.Fatalf("Failed to initialize repository: %v", err)
-	}
-
-	// Create authz service
-	authzService := authz.NewService(opaClient, repo)
 
 	// Start gRPC server
-	go func() {
-		log.Printf("Starting gRPC server on %s", cfg.GRPCServerAddress)
-		if err := grpc.StartGRPCServer(cfg.GRPCServerAddress, authzService); err != nil {
-			log.Fatalf("Failed to start gRPC server: %v", err)
-		}
-	}()
+	lis, err := net.Listen("tcp", cfg.GRPCServerAddress)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
 
-	// Wait for interrupt signal
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutting down server...")
+	s := grpc.NewServer()
+	authzServer := server.NewAuthZServer()
+
+	authzServer.Register(s)
+
+	log.Printf("AuthZ gRPC server running on %s", cfg.GRPCServerAddress)
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }

@@ -5,7 +5,7 @@ package mockRepo
 import (
 	time "time"
 
-	models "github.com/ashish19912009/services/auth/internal/models"
+	models "github.com/ashish19912009/zrms/services/authN/internal/models"
 	mock "github.com/stretchr/testify/mock"
 )
 

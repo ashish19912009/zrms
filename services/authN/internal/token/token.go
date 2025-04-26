@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/ashish19912009/services/auth/internal/constants"
-	"github.com/ashish19912009/services/auth/internal/logger"
-	"github.com/ashish19912009/services/auth/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/logger"
+	"github.com/ashish19912009/zrms/services/authN/internal/models"
 	"github.com/golang-jwt/jwt/v5"
 )
 
