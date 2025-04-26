@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ashish19912009/services/auth/internal/repository"
-	"github.com/ashish19912009/services/auth/internal/store"
+	"github.com/ashish19912009/zrms/services/authN/internal/repository"
+	"github.com/ashish19912009/zrms/services/authN/internal/store"
 )
 
 func setupTestRepo() repository.TokenRepository {

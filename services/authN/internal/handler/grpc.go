@@ -3,10 +3,10 @@ package handler
 import (
 	"context"
 
-	"github.com/ashish19912009/services/auth/internal/constants"
-	"github.com/ashish19912009/services/auth/internal/logger"
-	"github.com/ashish19912009/services/auth/internal/service"
-	"github.com/ashish19912009/services/auth/pb"
+	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/logger"
+	"github.com/ashish19912009/zrms/services/authN/internal/service"
+	"github.com/ashish19912009/zrms/services/authN/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
