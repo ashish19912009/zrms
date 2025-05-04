@@ -4,7 +4,7 @@
 // - protoc             v5.29.3
 // source: authz.proto
 
-package __
+package pb
 
 import (
 	context "context"
@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthZService_IsAuthorized_FullMethodName = "/api.AuthZService/IsAuthorized"
+	AuthZService_CheckAccess_FullMethodName      = "/api.AuthZService/CheckAccess"
+	AuthZService_BatchCheckAccess_FullMethodName = "/api.AuthZService/BatchCheckAccess"
 )
 
 // AuthZServiceClient is the client API for AuthZService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthZServiceClient interface {
-	IsAuthorized(ctx context.Context, in *AuthorizationRequest, opts ...grpc.CallOption) (*AuthorizationResponse, error)
+	CheckAccess(ctx context.Context, in *CheckAccessRequest, opts ...grpc.CallOption) (*CheckAccessResponse, error)
+	BatchCheckAccess(ctx context.Context, in *BatchCheckAccessRequest, opts ...grpc.CallOption) (*BatchCheckAccessResponse, error)
 }
 
 type authZServiceClient struct {
@@ -37,10 +39,20 @@ func NewAuthZServiceClient(cc grpc.ClientConnInterface) AuthZServiceClient {
 	return &authZServiceClient{cc}
 }
 
-func (c *authZServiceClient) IsAuthorized(ctx context.Context, in *AuthorizationRequest, opts ...grpc.CallOption) (*AuthorizationResponse, error) {
+func (c *authZServiceClient) CheckAccess(ctx context.Context, in *CheckAccessRequest, opts ...grpc.CallOption) (*CheckAccessResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AuthorizationResponse)
-	err := c.cc.Invoke(ctx, AuthZService_IsAuthorized_FullMethodName, in, out, cOpts...)
+	out := new(CheckAccessResponse)
+	err := c.cc.Invoke(ctx, AuthZService_CheckAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authZServiceClient) BatchCheckAccess(ctx context.Context, in *BatchCheckAccessRequest, opts ...grpc.CallOption) (*BatchCheckAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchCheckAccessResponse)
+	err := c.cc.Invoke(ctx, AuthZService_BatchCheckAccess_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +63,8 @@ func (c *authZServiceClient) IsAuthorized(ctx context.Context, in *Authorization
 // All implementations must embed UnimplementedAuthZServiceServer
 // for forward compatibility.
 type AuthZServiceServer interface {
-	IsAuthorized(context.Context, *AuthorizationRequest) (*AuthorizationResponse, error)
+	CheckAccess(context.Context, *CheckAccessRequest) (*CheckAccessResponse, error)
+	BatchCheckAccess(context.Context, *BatchCheckAccessRequest) (*BatchCheckAccessResponse, error)
 	mustEmbedUnimplementedAuthZServiceServer()
 }
 
@@ -62,8 +75,11 @@ type AuthZServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthZServiceServer struct{}
 
-func (UnimplementedAuthZServiceServer) IsAuthorized(context.Context, *AuthorizationRequest) (*AuthorizationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IsAuthorized not implemented")
+func (UnimplementedAuthZServiceServer) CheckAccess(context.Context, *CheckAccessRequest) (*CheckAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckAccess not implemented")
+}
+func (UnimplementedAuthZServiceServer) BatchCheckAccess(context.Context, *BatchCheckAccessRequest) (*BatchCheckAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchCheckAccess not implemented")
 }
 func (UnimplementedAuthZServiceServer) mustEmbedUnimplementedAuthZServiceServer() {}
 func (UnimplementedAuthZServiceServer) testEmbeddedByValue()                      {}
@@ -86,20 +102,38 @@ func RegisterAuthZServiceServer(s grpc.ServiceRegistrar, srv AuthZServiceServer)
 	s.RegisterService(&AuthZService_ServiceDesc, srv)
 }
 
-func _AuthZService_IsAuthorized_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AuthorizationRequest)
+func _AuthZService_CheckAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckAccessRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthZServiceServer).IsAuthorized(ctx, in)
+		return srv.(AuthZServiceServer).CheckAccess(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AuthZService_IsAuthorized_FullMethodName,
+		FullMethod: AuthZService_CheckAccess_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthZServiceServer).IsAuthorized(ctx, req.(*AuthorizationRequest))
+		return srv.(AuthZServiceServer).CheckAccess(ctx, req.(*CheckAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthZService_BatchCheckAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchCheckAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthZServiceServer).BatchCheckAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthZService_BatchCheckAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthZServiceServer).BatchCheckAccess(ctx, req.(*BatchCheckAccessRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +146,12 @@ var AuthZService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthZServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "IsAuthorized",
-			Handler:    _AuthZService_IsAuthorized_Handler,
+			MethodName: "CheckAccess",
+			Handler:    _AuthZService_CheckAccess_Handler,
+		},
+		{
+			MethodName: "BatchCheckAccess",
+			Handler:    _AuthZService_BatchCheckAccess_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
