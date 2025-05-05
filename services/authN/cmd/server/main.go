@@ -76,7 +76,7 @@ func main() {
 	//Initialize logger
 	logger.InitLogger("auth-service", zerolog.DebugLevel, "logs/auth_service.log")
 	logger.Info("Starting authentication service", map[string]interface{}{
-		"env": "local",
+		"env": appEnv,
 	})
 
 	// DB Connection

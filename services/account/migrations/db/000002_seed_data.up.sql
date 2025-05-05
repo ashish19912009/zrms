@@ -1,15 +1,3 @@
-INSERT INTO outlet.franchises (id, business_name, subdomain, logo_url, theme_settings, status, created_at, updated_at)
-VALUES
-  (
-    gen_random_uuid(), -- UUID for franchise ID
-    'rail food', -- Business Name
-    'railfood', -- Subdomain (you can customize this based on your needs)
-    NULL, -- logo_url (add the logo URL if available)
-    '{}'::jsonb, -- theme_settings (empty for now)
-    'active', -- Status
-    now(), -- created_at
-    now() -- updated_at
-  )
 
 INSERT INTO outlet.owners (id, name, gender, dob, mobile_no, email, address, aadhar_no, is_verified, status, created_at, updated_at)
 VALUES
@@ -27,6 +15,21 @@ VALUES
     now(), -- created_at
     now() -- updated_at
   );
+
+INSERT INTO outlet.franchises (id, business_name, subdomain, logo_url, theme_settings, status, created_at, updated_at, franchise_owner_id)
+VALUES
+  (
+    gen_random_uuid(), -- UUID for franchise ID
+    'rail food', -- Business Name
+    'railfood', -- Subdomain (you can customize this based on your needs)
+    NULL, -- logo_url (add the logo URL if available)
+    '{}'::jsonb, -- theme_settings (empty for now)
+    'active', -- Status
+    now(), -- created_at
+    now(), -- updated_at
+	'bc3aa99e-71aa-4063-a66b-6b616ace0adf'
+  )
+  
 
 INSERT INTO outlet.roles (id, franchise_id, name, description, is_default, created_at, updated_at)
   VALUES

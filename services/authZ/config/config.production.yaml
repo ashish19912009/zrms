@@ -1,0 +1,2 @@
+grpc_server_address: ":50052"
+rego_policy_path: "../policy/authz.rego"

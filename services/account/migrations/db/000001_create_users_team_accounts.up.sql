@@ -1,18 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS outlet;
 
-CREATE TABLE IF NOT EXISTS outlet.franchises (
-    id UUID PRIMARY KEY,
-    business_name TEXT NOT NULL,
-    subdomain TEXT UNIQUE NOT NULL,
-    logo_url TEXT,
-    theme_settings JSONB DEFAULT '{}'::jsonb,
-    status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
-    franchise_owner_id UUID NOT NULL, -- person who opened the franchise
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS outlet.owner (
+CREATE TABLE IF NOT EXISTS outlet.owners (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     gender TEXT NOT NULL,
@@ -23,6 +11,18 @@ CREATE TABLE IF NOT EXISTS outlet.owner (
     aadhar_no TEXT UNIQUE NOT NULL,
     is_verified Boolean,
     status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS outlet.franchises (
+    id UUID PRIMARY KEY,
+    business_name TEXT NOT NULL,
+    subdomain TEXT UNIQUE NOT NULL,
+    logo_url TEXT,
+    theme_settings JSONB DEFAULT '{}'::jsonb,
+    status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
+    franchise_owner_id UUID NOT NULL, -- person who opened the franchise
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -43,28 +43,6 @@ ALTER TABLE outlet.franchises
 ADD CONSTRAINT fk_franchise_owner
 FOREIGN KEY (franchise_owner_id) REFERENCES outlet.owners(id) ON DELETE RESTRICT;
 
-CREATE OR REPLACE FUNCTION outlet.ensure_creator_in_franchise_owners()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Check if the owner exists in franchise_owners
-    IF NOT EXISTS (
-        SELECT 1 FROM outlet.franchise_owners
-        WHERE franchise_id = NEW.id
-          AND owner_id = NEW.franchise_owner_id
-    ) THEN
-        -- If not, raise an error
-        RAISE EXCEPTION 'Franchise owner must be part of franchise_owners table';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_franchise_owner_exists
-AFTER INSERT OR UPDATE ON outlet.franchises
-FOR EACH ROW
-EXECUTE FUNCTION outlet.ensure_creator_in_franchise_owners();
-
 CREATE TABLE IF NOT EXISTS outlet.roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     franchise_id UUID NOT NULL REFERENCES outlet.franchises(id) ON DELETE CASCADE,
@@ -77,9 +55,28 @@ CREATE TABLE IF NOT EXISTS outlet.roles (
     UNIQUE(franchise_id, name)
 );
 
+/* Need a look
+
+ALTER TABLE outlet.permissions
+ADD COLUMN resource TEXT,
+ADD COLUMN action TEXT;
+
+UPDATE outlet.permissions
+SET
+  resource = split_part(key, ':', 1),
+  action = split_part(key, ':', 2)
+WHERE key LIKE '%:%';
+
+ALTER TABLE outlet.permissions
+ALTER COLUMN resource SET NOT NULL,
+ALTER COLUMN action SET NOT NULL;
+*/
+
 CREATE TABLE IF NOT EXISTS outlet.permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    key TEXT UNIQUE NOT NULL, -- e.g., "view_orders", "edit_menu", "manage_team"
+    resource TEXT NOT NULL,   -- e.g., "order", "menu", "account"
+    action TEXT NOT NULL,     -- e.g., "view", "edit", "delete", "create"
+    key TEXT UNIQUE NOT NULL, -- still keeping unique "key" like "order:view"
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -88,13 +85,6 @@ CREATE TABLE IF NOT EXISTS outlet.role_permissions (
     role_id UUID NOT NULL REFERENCES outlet.roles(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES outlet.permissions(id) ON DELETE CASCADE,
     PRIMARY KEY(role_id, permission_id)
-);
-
-CREATE TABLE IF NOT EXISTS outlet.direct_permissions (
-    account_id UUID NOT NULL REFERENCES outlet.team_accounts(id) ON DELETE CASCADE,
-    permission_id UUID NOT NULL REFERENCES outlet.permissions(id) ON DELETE CASCADE,
-    is_granted BOOLEAN NOT NULL DEFAULT true, -- true: allow, false: deny
-    PRIMARY KEY(account_id, permission_id)
 );
 
 CREATE TABLE IF NOT EXISTS outlet.team_accounts (
@@ -113,7 +103,14 @@ CREATE TABLE IF NOT EXISTS outlet.team_accounts (
     updated_at TIMESTAMPTZ DEFAULT now(),
     deleted_at TIMESTAMPTZ,
 
-    UNIQUE(franchise_id, login_id),
+    UNIQUE(franchise_id, login_id)
+);
+
+CREATE TABLE IF NOT EXISTS outlet.direct_permissions (
+    account_id UUID NOT NULL REFERENCES outlet.team_accounts(id) ON DELETE CASCADE,
+    permission_id UUID NOT NULL REFERENCES outlet.permissions(id) ON DELETE CASCADE,
+    is_granted BOOLEAN NOT NULL DEFAULT true, -- true: allow, false: deny
+    PRIMARY KEY(account_id, permission_id)
 );
 
 CREATE TABLE IF NOT EXISTS outlet.franchise_addresses (
@@ -133,7 +130,7 @@ CREATE TABLE IF NOT EXISTS outlet.franchise_addresses (
 
 CREATE INDEX idx_franchise_pincode ON outlet.franchise_addresses (pincode);
 CREATE INDEX idx_franchise_id ON outlet.franchise_addresses (franchise_id);
-CREATE INDEX idx_franchise_id ON outlet.team_accounts (franchise_id);
+CREATE INDEX idx_franchise_team_account_id ON outlet.team_accounts (franchise_id);
 CREATE INDEX idx_users_mobile_no ON outlet.team_accounts (mobile_no);
 CREATE INDEX idx_users_login_id ON outlet.team_accounts (login_id);
 CREATE INDEX idx_users_account_type ON outlet.team_accounts (account_type);

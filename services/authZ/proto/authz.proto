@@ -1,37 +1,68 @@
+
 syntax = "proto3";
 
-package authz;
+package api;
 
-import "google/protobuf/struct.proto";
+option go_package = "./;pb";
 
-option go_package=  "./pb";
+/**s
+ export PATH="$PATH:$(go env GOPATH)/bin"
+ protoc --go_out=../pb --go-grpc_out=../pb authz.proto
+**/
 
-service AuthzService {
-  rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse);
-  rpc AddPolicy (AddPolicyRequest) returns (AddPolicyResponse);
-  rpc RemovePolicy (RemovePolicyRequest) returns (RemovePolicyResponse);
-  rpc ListPolicies (ListPoliciesRequest) returns (ListPoliciesResponse);
+
+service AuthZService {
+    rpc CheckAccess(CheckAccessRequest) returns (CheckAccessResponse);
+    rpc BatchCheckAccess(BatchCheckAccessRequest) returns (BatchCheckAccessResponse);
+  }
+  
+  message CheckAccessRequest {
+    string account_id           = 1; // ID of the team account (who is making request)
+    string franchise_id         = 2; // Franchise scope (multi-tenant)
+    string resource             = 3; // e.g., "order", "menu", "team"
+    string action               = 4; // e.g., "view", "edit", "delete", "manage"
+    map<string, string> context = 5; // 👈 optional context like order_id, etc.
+  }
+
+  message Decision {
+    bool allowed            = 1; // true = allowed, false = denied
+    string reason           = 2; // optional, reason for deny (like "no permission")
+    int64 issued_at         = 3; // timestamp at which decision was created
+    int64 expires_at        = 4;
+    string policy_version   = 5; // policy version
+  }
+  
+  message CheckAccessResponse {
+    Decision decision   = 1;
+  }
+
+  // Keyed by a unique cache key like "<account_id>:<resource>:<action>"
+message AuthZCacheEntry {
+  string key = 1;
+  Decision decision = 2;
 }
+  
+  message ResourceAction {
+    string resource       = 1;
+    string action         = 2;
+  }
 
-message CheckPermissionRequest {
-  string subject = 1;  // user or role
-  string action = 2;
-  string resource = 3;
+  message ResourceActionResult {
+    ResourceAction resAct = 1;
+    Decision decision     = 2;
+  }
+  message BatchCheckAccessRequest {
+    string account_id                 = 1;
+    string franchise_id               = 2;
+    repeated ResourceAction resources = 3;
+    map<string, string> context       = 4; // optional for batch too
+  }
+
+  message BatchCheckAccessResponse {
+    repeated ResourceActionResult results = 1;
+  }
+
+  // Batch of multiple authorization decisions
+message AuthZCacheBatch {
+  repeated AuthZCacheEntry entries = 1;
 }
-
-message CheckPermissionResponse {
-  bool allowed = 1;
-  string reason = 2;
-}
-
-message AddPolicyRequest {
-  string subject = 1;
-  string action = 2;
-  string resource = 3;
-}
-
-message AddPolicyResponse {
-  bool success = 1;
-}
-
-// Other request/response messages...

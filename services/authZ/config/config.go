@@ -6,15 +6,21 @@ import (
 
 type Config struct {
 	GRPCServerAddress string
+	RegoPath          string
 }
 
 func Load() (*Config, error) {
-	addr := os.Getenv("GRPC_SERVER_ADDRESS")
+	addr := os.Getenv("grpc_server_address")
 	if addr == "" {
-		addr = ":50051" // default port
+		addr = ":50052" // default port
+	}
+	regoPath := os.Getenv("rego_policy_path")
+	if regoPath == "" {
+		regoPath = "../../policy/authz.rego" // default port
 	}
 
 	return &Config{
 		GRPCServerAddress: addr,
+		RegoPath:          regoPath,
 	}, nil
 }
