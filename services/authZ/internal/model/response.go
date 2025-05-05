@@ -50,10 +50,10 @@ func BatchCheckAccessFromModelToPb(responses []*CheckBatchAccessResponse) *pb.Ba
 				ExpiresAt:     res.ExpiresAt,
 				PolicyVersion: res.PolicyVersion,
 			}
-			// result.ResAct = &pb.ResourceAction{
-			// 	Resource: res.Resource,
-			// 	Action:   res.Action,
-			// }
+			result.ResAct = &pb.ResourceAction{
+				Resource: res.Resource,
+				Action:   res.Action,
+			}
 		} else {
 			// Create a default denied decision for nil responses
 			result.Decision = &pb.Decision{
@@ -63,12 +63,11 @@ func BatchCheckAccessFromModelToPb(responses []*CheckBatchAccessResponse) *pb.Ba
 				ExpiresAt:     0,
 				PolicyVersion: "",
 			}
-			// result.ResAct = &pb.ResourceAction{
-			// 	Resource: result.ResAct.Resource,
-			// 	Action:   result.ResAct.Action,
-			// }
+			result.ResAct = &pb.ResourceAction{
+				Resource: result.ResAct.Resource,
+				Action:   result.ResAct.Action,
+			}
 		}
-
 		pbResponse.Results[i] = result
 	}
 

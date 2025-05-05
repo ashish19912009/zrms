@@ -160,10 +160,10 @@ func (s *authZService) IsAuthorizedBatch(
 	)
 
 	responses := make([]*model.CheckBatchAccessResponse, len(resources))
-	for i, r := range responses {
+	for i := range responses {
 		responses[i] = &model.CheckBatchAccessResponse{
-			Resource:      r.Resource,
-			Action:        r.Action,
+			Resource:      resources[i].Resource,
+			Action:        resources[i].Action,
 			Allowed:       false,
 			Reason:        "pending evaluation",
 			IssuedAt:      0,
