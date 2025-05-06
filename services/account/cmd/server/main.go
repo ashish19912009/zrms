@@ -90,6 +90,6 @@ func main() {
 
 	log.Printf("gRPC server running on port %s in %s enviroment", grpcPort, os.Getenv("APP_ENV"))
 	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to serve gRPC: %v", err)
+		log.Fatalf("Failed to serve gRPC services: %v", err)
 	}
 }
