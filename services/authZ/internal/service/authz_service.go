@@ -9,6 +9,7 @@ import (
 	"github.com/ashish19912009/zrms/services/authZ/internal/logger"
 	"github.com/ashish19912009/zrms/services/authZ/internal/model"
 	"github.com/ashish19912009/zrms/services/authZ/internal/repository"
+	"github.com/ashish19912009/zrms/services/authZ/internal/store"
 	"github.com/ashish19912009/zrms/services/authZ/pb"
 	"github.com/open-policy-agent/opa/rego"
 )
@@ -89,7 +90,9 @@ func (s *authZService) IsAuthorized(ctx context.Context, franchiseID, accountID,
 	var tenantPrefix, resourceActionPostfix = makeCacheKey(accountID, resource, action)
 	err = s.cRepo.Get(ctx, tenantPrefix, resourceActionPostfix, result)
 	if err != nil {
-		logger.Error(constants.WrongFetchingData, err, nil)
+		if err != store.ErrKeyNotFound {
+			logger.Error(constants.WrongFetchingData, err, nil)
+		}
 	}
 	if err == nil {
 		return result.Allowed, result.Reason, result.IssuedAt, result.ExpiresAt, result.PolicyVersion, nil

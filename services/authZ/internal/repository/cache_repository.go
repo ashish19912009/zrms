@@ -171,11 +171,7 @@ func (r *cacheRepository) Get(ctx context.Context, tenantPrefix, resourceActionP
 	raw, err := r.store.Get(key)
 	if err != nil {
 		if err == store.ErrKeyNotFound {
-			logger.Warn(constants.ErrKeyNotFound, map[string]interface{}{
-				"method": method,
-				"key":    key,
-			})
-			return nil
+			return store.ErrKeyNotFound
 		}
 		logger.Error(constants.RedisOperationFailed, err, map[string]interface{}{
 			"method": method,

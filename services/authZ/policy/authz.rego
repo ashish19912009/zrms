@@ -1,7 +1,7 @@
 package zrms.services.authz
 
 default allow = false
-default deny_reason = "default deny"
+default deny_reason = ""
 policy_version := "v1.0.0"
 
 # --------------------------------------------------
