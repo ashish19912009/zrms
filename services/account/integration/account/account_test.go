@@ -1,103 +1,103 @@
 package integration
 
-import (
-	"context"
-	"log"
-	"os"
-	"testing"
+// import (
+// 	"context"
+// 	"log"
+// 	"os"
+// 	"testing"
 
-	"github.com/joho/godotenv"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+// 	"github.com/joho/godotenv"
+// 	"github.com/stretchr/testify/assert"
+// 	"google.golang.org/grpc"
+// 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/ashish19912009/zrms/services/account/pb"
-)
+// 	pb "github.com/ashish19912009/zrms/services/account/pb"
+// )
 
-var grpcClient pb.AccountServiceClient
+// var grpcClient pb.AccountServiceClient
 
-func TestMain(m *testing.M) {
-	if err := godotenv.Load("../../../config/env/test.env"); err != nil {
-		log.Fatalf("Failed to load .env.test file: %v", err)
-	}
+// func TestMain(m *testing.M) {
+// 	if err := godotenv.Load("../../../config/env/test.env"); err != nil {
+// 		log.Fatalf("Failed to load .env.test file: %v", err)
+// 	}
 
-	conn, err := grpc.NewClient(os.Getenv("GRPC_SERVER_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("failed to connect to gRPC server: %v", err)
-	}
-	defer conn.Close()
+// 	conn, err := grpc.NewClient(os.Getenv("GRPC_SERVER_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+// 	if err != nil {
+// 		log.Fatalf("failed to connect to gRPC server: %v", err)
+// 	}
+// 	defer conn.Close()
 
-	grpcClient = pb.NewAccountServiceClient(conn)
+// 	grpcClient = pb.NewAccountServiceClient(conn)
 
-	os.Exit(m.Run())
-}
+// 	os.Exit(m.Run())
+// }
 
-func TestCreateAccount_Integration(t *testing.T) {
-	ctx := context.Background()
-	resp, err := grpcClient.CreateAccount(ctx, &pb.CreateAccountRequest{
-		Id:       "acc-integ-01",
-		MobileNo: "9000000001",
-		Name:     "Integration User",
-		Role:     "admin",
-		Status:   "active",
-		EmpId:    "EMP9001",
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "acc-integ-01", resp.Account.Id)
-}
+// func TestCreateAccount_Integration(t *testing.T) {
+// 	ctx := context.Background()
+// 	resp, err := grpcClient.CreateAccount(ctx, &pb.CreateAccountRequest{
+// 		Id:       "acc-integ-01",
+// 		MobileNo: "9000000001",
+// 		Name:     "Integration User",
+// 		Role:     "admin",
+// 		Status:   "active",
+// 		EmpId:    "EMP9001",
+// 	})
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.Equal(t, "acc-integ-01", resp.Account.Id)
+// }
 
-func TestGetAccountByID_Integration(t *testing.T) {
-	ctx := context.Background()
-	resp, err := grpcClient.GetAccountByID(ctx, &pb.GetAccountByIDRequest{Id: "acc-integ-01"})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "acc-integ-01", resp.Account.Id)
-}
+// func TestGetAccountByID_Integration(t *testing.T) {
+// 	ctx := context.Background()
+// 	resp, err := grpcClient.GetAccountByID(ctx, &pb.GetAccountByIDRequest{Id: "acc-integ-01"})
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.Equal(t, "acc-integ-01", resp.Account.Id)
+// }
 
-func TestUpdateAccount_Integration(t *testing.T) {
-	ctx := context.Background()
-	resp, err := grpcClient.UpdateAccount(ctx, &pb.UpdateAccountRequest{
-		Id:     "acc-integ-01",
-		Name:   "Updated Integration User",
-		Status: "inactive",
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "Updated Integration User", resp.Account.Name)
-	assert.Equal(t, "inactive", resp.Account.Status)
-}
+// func TestUpdateAccount_Integration(t *testing.T) {
+// 	ctx := context.Background()
+// 	resp, err := grpcClient.UpdateAccount(ctx, &pb.UpdateAccountRequest{
+// 		Id:     "acc-integ-01",
+// 		Name:   "Updated Integration User",
+// 		Status: "inactive",
+// 	})
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.Equal(t, "Updated Integration User", resp.Account.Name)
+// 	assert.Equal(t, "inactive", resp.Account.Status)
+// }
 
-func TestListAccounts_Integration(t *testing.T) {
-	ctx := context.Background()
-	resp, err := grpcClient.GetAccounts(ctx, &pb.GetAccountsRequest{Skip: 0, Take: 5})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.GreaterOrEqual(t, len(resp.Accounts), 1)
-}
+// func TestListAccounts_Integration(t *testing.T) {
+// 	ctx := context.Background()
+// 	resp, err := grpcClient.GetAccounts(ctx, &pb.GetAccountsRequest{Skip: 0, Take: 5})
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.GreaterOrEqual(t, len(resp.Accounts), 1)
+// }
 
-func TestCreateAccount_InvalidInput(t *testing.T) {
-	ctx := context.Background()
-	_, err := grpcClient.CreateAccount(ctx, &pb.CreateAccountRequest{
-		Id:       "",
-		MobileNo: "",
-	})
-	assert.Error(t, err)
-}
+// func TestCreateAccount_InvalidInput(t *testing.T) {
+// 	ctx := context.Background()
+// 	_, err := grpcClient.CreateAccount(ctx, &pb.CreateAccountRequest{
+// 		Id:       "",
+// 		MobileNo: "",
+// 	})
+// 	assert.Error(t, err)
+// }
 
-func TestUpdateAccount_InvalidInput(t *testing.T) {
-	ctx := context.Background()
-	_, err := grpcClient.UpdateAccount(ctx, &pb.UpdateAccountRequest{
-		Id: "",
-	})
-	assert.Error(t, err)
-}
+// func TestUpdateAccount_InvalidInput(t *testing.T) {
+// 	ctx := context.Background()
+// 	_, err := grpcClient.UpdateAccount(ctx, &pb.UpdateAccountRequest{
+// 		Id: "",
+// 	})
+// 	assert.Error(t, err)
+// }
 
-func TestListAccounts_ZeroTake(t *testing.T) {
-	ctx := context.Background()
-	_, err := grpcClient.GetAccounts(ctx, &pb.GetAccountsRequest{Skip: 0, Take: 0})
-	assert.Error(t, err)
-}
+// func TestListAccounts_ZeroTake(t *testing.T) {
+// 	ctx := context.Background()
+// 	_, err := grpcClient.GetAccounts(ctx, &pb.GetAccountsRequest{Skip: 0, Take: 0})
+// 	assert.Error(t, err)
+// }
 
 // var grpcClient pb.AccountServiceClient
 

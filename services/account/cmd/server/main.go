@@ -9,9 +9,11 @@ import (
 	"os"
 	"time"
 
-	config "github.com/ashish19912009/zrms/services/account/config/account_config"
 	"github.com/ashish19912009/zrms/services/account/internal/auth"
+	"github.com/ashish19912009/zrms/services/account/internal/client"
+	config "github.com/ashish19912009/zrms/services/account/internal/config"
 	"github.com/ashish19912009/zrms/services/account/internal/handler"
+	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/middleware"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/service"
@@ -19,9 +21,9 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
-
+var appEnv string
 func loadEnv() {
-	appEnv := os.Getenv("APP_ENV")
+	appEnv = os.Getenv("APP_ENV")
 	if appEnv == "" {
 		appEnv = "local" // default
 	}
@@ -59,12 +61,19 @@ func mockValidateToken(token string) (map[string]interface{}, error) {
 
 func main() {
 	loadEnv()
-	config.LoadConfig()
+	config_yaml_path := fmt.Sprintf("../../config/config.%s.yaml",appEnv)
+	cfg, err := config.LoadConfig(config_yaml_path)
 	db, err := connectDB()
 	if err != nil {
 		log.Fatalf("DB error: %v", err)
 	}
 	defer db.Close()
+
+	authzClient, conn, err := client.NewAuthZServiceClient(cfg.AuthService.Host, cfg.AuthService.Port)
+	if err != nil {
+		logger.Fatal("failed to connect to auth service: %v", err, nil)
+	}
+	defer conn.Close()
 
 	repo := repository.NewRepository(db)
 	svc := service.NewAccountService(repo)
