@@ -20,7 +20,6 @@ require (
 )
 
 require (
-	github.com/ashish19912009/zrms/services/authZ v0.0.0-20250505162625-6495751743fb // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
