@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/ashish19912009/zrms/services/account/internal/client"
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
@@ -24,14 +25,19 @@ type AdminService interface {
 type adminService struct {
 	a_repo repository.AdminRepository // use interface, not pointer to struct+
 	repo   repository.Repository
+	client client.AuthZClient
 	// authorizer Authorizer (optionally inject this if using a real AuthZ client)
 }
 
-func NewAdminService(admin_repo repository.AdminRepository, repo repository.Repository) AdminService {
+func NewAdminService(admin_repo repository.AdminRepository, repo repository.Repository, client client.AuthZClient) (AdminService, error) {
+	if admin_repo == nil || repo == nil || client == nil {
+		return nil, errors.New("fields required")
+	}
 	return &adminService{
 		a_repo: admin_repo,
 		repo:   repo,
-	}
+		client: client,
+	}, nil
 }
 
 // ---- AuthZ stub (replace with real call to AuthZ service) ----
@@ -88,27 +94,31 @@ func (ad *adminService) UpdateNewOwner(ctx context.Context, id string, owner *mo
 }
 
 func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error) {
-	if err := authorize(ctx, "create", "franchise"); err != nil {
-		return nil, err
-	}
-
-	// 💡 Run validations before calling repo
-	// check if business name already registered or not
-	franchiseExists, err := ad.repo.GetFranchiseByBusinessName(ctx, franchise.BusinessName)
+	accessResponse, err := ad.client.CheckAccess(ctx, "66666666-6666-6666-6666-666666666666", "22222222-2222-2222-2222-222222222222", "account", "manage")
 	if err != nil {
 		return nil, err
 	}
-
-	var newFranchise *model.AddResponse
-	if franchiseExists != nil && franchiseExists.BusinessName == franchise.BusinessName && franchiseExists.Franchise_Owner_id == franchise.Franchise_Owner_id {
-		return nil, errors.New(constants.BusinessAlreadyExist)
-	} else {
-		newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
+	if accessResponse.Allowed {
+		// 💡 Run validations before calling repo
+		// check if business name already registered or not
+		franchiseExists, err := ad.repo.GetFranchiseByBusinessName(ctx, franchise.BusinessName)
 		if err != nil {
 			return nil, err
 		}
+
+		var newFranchise *model.AddResponse
+		if franchiseExists != nil && franchiseExists.BusinessName == franchise.BusinessName && franchiseExists.Franchise_Owner_id == franchise.Franchise_Owner_id {
+			return nil, errors.New(constants.BusinessAlreadyExist)
+		} else {
+			newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return newFranchise, nil
+	} else {
+		return nil, errors.New(accessResponse.Reason)
 	}
-	return newFranchise, nil
 }
 
 func (ad *adminService) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error) {

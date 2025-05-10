@@ -3,19 +3,19 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
-	"fmt"
 
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/dbutils"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
-	"github.com/ashish19912009/zrms/services/authN/internal/models"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/ashish19912009/zrms/services/authN/internal/model"
 )
 
+var schema_outlet = constants.DB.Schema_Outlet
+var schema_global = constants.DB.Schema_Global
+
 type UserRepository interface {
-	GetUser(ctx context.Context, loginID_accountID string, accountType string) (*models.User, error)
-	VerifyPassword(hashedPassword, password string) bool
+	GetUser(ctx context.Context, loginID_accountID string, accountType string) (*model.User, error)
+	GetFranchiseRolePermissions(ctx context.Context, franchiseID string) ([]*model.ResourceAction, error)
 }
 
 type userRepository struct {
@@ -28,68 +28,167 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	}
 }
 
-func isUUID(s string) bool {
-	_, err := uuid.Parse(s)
-	return err == nil
-}
-
-func (r *userRepository) GetUser(ctx context.Context, indentifier string, accountType string) (*models.User, error) {
-	if indentifier == "" || accountType == "" {
-		logger.Error(constants.CredentialMissing, nil, map[string]interface{}{
-			"method":       constants.Methods.GetUser,
-			"login_id":     indentifier,
-			"account_type": accountType,
-		})
-		return nil, fmt.Errorf(constants.CredentialMissing)
+func (r *userRepository) GetUser(ctx context.Context, indentifier string, accountType string) (*model.User, error) {
+	var method = constants.Methods.GetUser
+	var table = constants.DB.Table_Franchise_Accounts
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
-	var query string
-	if isUUID(indentifier) {
-		query = "SELECT account_id, employee_id, account_type, name, mobile_no, password_hash, role, permissions, status FROM users.team_accounts WHERE account_id = $1 AND account_type = $2 AND deleted_at IS NULL"
-	}
-	query = "SELECT account_id, employee_id, account_type, name, mobile_no, password_hash, role, permissions, status FROM users.team_accounts WHERE login_id = $1 AND account_type = $2 AND deleted_at IS NULL"
-	row := r.db.QueryRowContext(ctx, query, indentifier, accountType)
 
-	var user models.User
-	if err := row.Scan(
+	if err := dbutils.CheckDBConn(r.db, method); err != nil {
+		return nil, err
+	}
+
+	// Define columns with alias prefixes
+	columns := []string{
+		"account_id",
+		"franchise_id",
+		"employee_id",
+		"account_type",
+		"name",
+		"mobile_no",
+		"password_hash",
+		"role",
+		"permissions",
+		"status",
+	}
+
+	conditions := map[string]any{
+		"account_id":   indentifier,
+		"account_type": accountType,
+	}
+
+	opts := &dbutils.QueryBuilderOptions{
+		Whilelist: struct {
+			Schemas []string
+			Tables  []string
+			Columns []string
+		}{
+			Schemas: []string{schema_outlet},
+			Tables:  []string{table},
+			Columns: columns,
+		},
+	}
+
+	// Use the BuildSelectQuery helper function to build the query
+	query, args, err := dbutils.BuildSelectQuery(method, schema_outlet, table, columns, conditions, opts)
+	if err != nil {
+		return nil, err
+	}
+	var user model.User
+
+	if err := dbutils.ExecuteAndScanRow(ctx, method, r.db, query, args,
 		&user.AccountID,
+		&user.FranchiseID,
 		&user.EmployeeID,
 		&user.AccountType,
 		&user.Name,
 		&user.MobileNo,
 		&user.Password,
 		&user.Role,
-		&user.Permissions,
 		&user.Status); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			logger.Warn(constants.ErrUserNotFound, map[string]interface{}{
-				"method":       constants.Methods.GetUser,
-				"login_id":     indentifier,
-				"account_type": accountType,
-			})
-			return nil, fmt.Errorf("%s: %w", constants.ErrUserNotFound, err)
-		}
-		logger.Error(constants.DBQueryFailed, err, map[string]interface{}{
-			"method":       constants.Methods.GetUser,
-			"login_id":     indentifier,
-			"account_type": accountType,
-		})
-		return nil, fmt.Errorf("%s: %w", constants.DBQueryFailed, err)
+		logger.Error(constants.DBQueryError, err, nil)
+		return nil, err
 	}
-	logger.Info(constants.UserFetchedSuccessful, map[string]interface{}{
-		"method":       constants.Methods.GetUser,
-		"account_id":   user.AccountID,
-		"account_type": user.AccountType,
-	})
+
 	return &user, nil
 }
 
-func (r *userRepository) VerifyPassword(hashedPassword, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	if err != nil {
-		logger.Warn(constants.ErrInvalidPassword, map[string]interface{}{
-			"method": constants.Methods.VerifyPassword,
-		})
-		return false
+func (r *userRepository) GetFranchiseRolePermissions(ctx context.Context, franchiseID string) ([]*model.ResourceAction, error) {
+	var method = constants.Methods.GetFranchiseRolePermissions
+	var table = constants.DB.Table_Role
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
 	}
-	return true
+	if err := dbutils.CheckDBConn(r.db, method); err != nil {
+		return nil, err
+	}
+
+	// 	SELECT
+	//     p.resource,
+	//     p.action
+	// FROM
+	//     outlet.roles r
+	// JOIN
+	//     outlet.role_permissions rp ON r.id = rp.role_id
+	// JOIN
+	//     outlet.permissions p ON rp.permission_id = p.id
+	// WHERE
+	//     r.franchise_id = '22222222-2222-2222-2222-222222222222';
+
+	// Define columns with alias prefixes
+	columns := []string{
+		"p.resource AS resource",
+		"p.action AS action",
+	}
+
+	// Join clause to fetch role name
+	joins := []dbutils.JoinClause{
+		{
+			Type:   "INNER",
+			Schema: schema_outlet,
+			Table:  constants.DB.Table_Role_Permissions,
+			Alias:  "rp",
+			On:     "r.id = rp.role_id",
+		},
+		{
+			Type:   "INNER",
+			Schema: schema_outlet,
+			Table:  constants.DB.Table_Permissions,
+			Alias:  "p",
+			On:     "rp.permission_id = p.id",
+		},
+	}
+
+	conditions := map[string]any{
+		"r.franchise_id": franchiseID,
+	}
+
+	// Whitelist for security
+	opts := &dbutils.QueryBuilderOptions{
+		Whilelist: struct {
+			Schemas []string
+			Tables  []string
+			Columns []string
+		}{
+			Schemas: []string{schema_outlet},
+			Tables:  []string{table, constants.DB.Table_Role_Permissions, constants.DB.Table_Permissions},
+			Columns: columns,
+		},
+	}
+
+	// Build the join query
+	query, args, err := dbutils.BuildJoinSelectQuery(method, schema_outlet, table, "r", columns, joins, conditions, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Run the query
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		logger.Error(constants.DBQueryError, err, nil)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Process the result
+	var allResourceMatrix []*model.ResourceAction
+	for rows.Next() {
+		var res *model.ResourceAction
+		err := rows.Scan(
+			&res.Resource,
+			&res.Action,
+		)
+		if err != nil {
+			logger.Error("Failed to scan row into account response", err, nil)
+			return nil, err
+		}
+		allResourceMatrix = append(allResourceMatrix, res)
+	}
+
+	return allResourceMatrix, nil
 }

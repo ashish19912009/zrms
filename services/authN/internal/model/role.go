@@ -1,8 +1,13 @@
-package models
+package model
 
 import (
 	"time"
 )
+
+type ResourceAction struct {
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+}
 
 type Role struct {
 	ID          string       `json:"id"`

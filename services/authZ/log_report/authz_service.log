@@ -94,3 +94,5 @@
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-06T23:58:54+05:30","message":"Starting authorization services"}
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-07T00:00:52+05:30","message":"Starting authorization services"}
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-07T00:01:15+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-08T22:49:38+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-09T09:20:09+05:30","message":"Starting authorization services"}

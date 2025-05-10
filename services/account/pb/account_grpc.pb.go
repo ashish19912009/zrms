@@ -46,7 +46,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccountServiceClient interface {
-	CreateFranchise(ctx context.Context, in *AddFranchiseRequest, opts ...grpc.CallOption) (*AddFranchiseResponse, error)
+	CreateFranchise(ctx context.Context, in *AddFranchiseRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	UpdateFranchise(ctx context.Context, in *UpdateFranchiseRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	UpdateFranchiseStatus(ctx context.Context, in *UpdateFranchiseStatusRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	DeleteFranchise(ctx context.Context, in *DeleteFranchiseRequest, opts ...grpc.CallOption) (*DeletedResponse, error)
@@ -77,9 +77,9 @@ func NewAccountServiceClient(cc grpc.ClientConnInterface) AccountServiceClient {
 	return &accountServiceClient{cc}
 }
 
-func (c *accountServiceClient) CreateFranchise(ctx context.Context, in *AddFranchiseRequest, opts ...grpc.CallOption) (*AddFranchiseResponse, error) {
+func (c *accountServiceClient) CreateFranchise(ctx context.Context, in *AddFranchiseRequest, opts ...grpc.CallOption) (*AddResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddFranchiseResponse)
+	out := new(AddResponse)
 	err := c.cc.Invoke(ctx, AccountService_CreateFranchise_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (c *accountServiceClient) DeleteFranchiseAccountByID(ctx context.Context, i
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
 type AccountServiceServer interface {
-	CreateFranchise(context.Context, *AddFranchiseRequest) (*AddFranchiseResponse, error)
+	CreateFranchise(context.Context, *AddFranchiseRequest) (*AddResponse, error)
 	UpdateFranchise(context.Context, *UpdateFranchiseRequest) (*UpdateResponse, error)
 	UpdateFranchiseStatus(context.Context, *UpdateFranchiseStatusRequest) (*UpdateResponse, error)
 	DeleteFranchise(context.Context, *DeleteFranchiseRequest) (*DeletedResponse, error)
@@ -322,7 +322,7 @@ type AccountServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAccountServiceServer struct{}
 
-func (UnimplementedAccountServiceServer) CreateFranchise(context.Context, *AddFranchiseRequest) (*AddFranchiseResponse, error) {
+func (UnimplementedAccountServiceServer) CreateFranchise(context.Context, *AddFranchiseRequest) (*AddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateFranchise not implemented")
 }
 func (UnimplementedAccountServiceServer) UpdateFranchise(context.Context, *UpdateFranchiseRequest) (*UpdateResponse, error) {

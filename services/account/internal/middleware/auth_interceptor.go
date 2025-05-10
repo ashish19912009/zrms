@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ashish19912009/zrms/services/account/internal/client"
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -13,6 +14,8 @@ import (
 type AuthInterceptor struct {
 	allowedRoles map[string]bool
 	jwtSecret    []byte
+	authz_client client.AuthZClient
+	authn_client client.AuthNClient
 	//	validateToken func(token string) (map[string]interface{}, error)
 }
 

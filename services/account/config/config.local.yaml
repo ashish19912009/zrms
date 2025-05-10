@@ -2,4 +2,4 @@ env: "development"
 port: "50053"
 auth_service:
   host_authz: "localhost"
-  port_authz: 50052
+  port_authz: "50052"

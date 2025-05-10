@@ -74,7 +74,7 @@ func main() {
 	}
 
 	//Initialize logger
-	logger.InitLogger("auth-service", zerolog.DebugLevel, "logs/auth_service.log")
+	logger.InitLogger("auth-service", zerolog.DebugLevel, "../../log_report/authN_service.log")
 	logger.Info("Starting authentication service", map[string]interface{}{
 		"env": appEnv,
 	})
@@ -121,10 +121,6 @@ func main() {
 	accessTTL := os.Getenv("ACCESS_TOKEN_TTL")
 	refreshTTL := os.Getenv("REFRESH_TOKEN_TTL")
 	authService = service.NewAuthService(tokenManger, tokenRepo, userRepo)
-	// logger.Info("accessTTL", map[string]interface{}{
-	// 	"accessTTL":  accessTTL,
-	// 	"refreshTTL": refreshTTL,
-	// })
 	if accessTTL != "" && refreshTTL != "" {
 		attl, err1 := time.ParseDuration(accessTTL)
 		rttl, err2 := time.ParseDuration(refreshTTL)

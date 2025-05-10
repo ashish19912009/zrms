@@ -11,7 +11,6 @@ import (
 	"github.com/ashish19912009/zrms/services/authN/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // func insertUser(t *testing.T, mock sqlmock.Sqlmock, user models.User) {
@@ -59,13 +58,6 @@ func TestGetUser(t *testing.T) {
 		user, err := repo.GetUser(ctx, "acc-123", "admin")
 		assert.NoError(t, err)
 		assert.Equal(t, "acc-123", user.AccountID)
-
-		// Assert on permission struct values
-		require.Len(t, user.Permissions, 1)
-		assert.True(t, user.Permissions[0].UserAccount.Create)
-		assert.True(t, user.Permissions[0].UserAccount.Read)
-		assert.True(t, user.Permissions[0].UserAccount.Update)
-		assert.False(t, user.Permissions[0].UserAccount.Delete)
 	})
 
 	t.Run("Missing Credentials", func(t *testing.T) {
@@ -182,20 +174,4 @@ func TestGetUser(t *testing.T) {
 		require.Nil(t, user)
 	})
 
-}
-
-func TestVerifyPassword(t *testing.T) {
-	repo := repository.NewUserRepository(nil)
-
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("secure-password"), bcrypt.DefaultCost)
-
-	t.Run("Correct Password", func(t *testing.T) {
-		result := repo.VerifyPassword(string(hashedPassword), "secure-password")
-		assert.True(t, result)
-	})
-
-	t.Run("Incorrect Password", func(t *testing.T) {
-		result := repo.VerifyPassword(string(hashedPassword), "wrong-password")
-		assert.False(t, result)
-	})
 }

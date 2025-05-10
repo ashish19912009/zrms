@@ -108,7 +108,7 @@ func main() {
 	// Register the gRPC server with the AuthZ service
 	authzServer := server.NewAuthZServer(authzService)
 	authzServer.Register(grpcServer)
-	log.Printf(constants.GRPCServerRunning, cfg.Port)
+	log.Printf(constants.GRPCServerRunning, cfg.Port, os.Getenv("APP_ENV"))
 
 	// Start serving
 	if err := grpcServer.Serve(lis); err != nil {

@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/ashish19912009/zrms/services/account/internal/logger"
-	"github.com/ashish19912009/zrms/services/account/internal/mapper"
-	"github.com/ashish19912009/zrms/services/account/internal/model"
+	"github.com/ashish19912009/zrms/services/authN/internal/logger"
+	"github.com/ashish19912009/zrms/services/authN/internal/mapper"
+	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/ashish19912009/zrms/services/authZ/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -17,7 +17,7 @@ import (
 
 type AuthZClient interface {
 	CheckAccess(ctx context.Context, accountID, franchiseID, resource, action string) (*model.CheckAccessResponse, error)
-	BatchCheckAccess(ctx context.Context, accountID, franchiseID string, resources []model.ResourceAction) (*model.BatchCheckAccessResponse, error)
+	BatchCheckAccess(ctx context.Context, accountID, franchiseID string, resources []*model.ResourceAction) (*model.BatchCheckAccessResponse, error)
 	Close() error
 }
 
@@ -74,7 +74,7 @@ func (authzClient *authZClient) CheckAccess(ctx context.Context, accountID, fran
 	return accessPb, nil
 }
 
-func (authzClient *authZClient) BatchCheckAccess(ctx context.Context, accountID, franchiseID string, resources []model.ResourceAction) (*model.BatchCheckAccessResponse, error) {
+func (authzClient *authZClient) BatchCheckAccess(ctx context.Context, accountID, franchiseID string, resources []*model.ResourceAction) (*model.BatchCheckAccessResponse, error) {
 	req := &model.BatchCheckAccess{
 		AccountID:   accountID,
 		FranchiseID: franchiseID,

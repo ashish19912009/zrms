@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/ashish19912009/zrms/services/account/internal/client"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/validations"
@@ -54,18 +55,23 @@ type AccountService interface {
 
 // accountService implements AccountService
 type accountService struct {
-	repo repository.Repository
+	repo   repository.Repository
+	client client.AuthZClient
 }
 
 // NewAccountService initializes service with a repository
-func NewAccountService(repo repository.Repository) AccountService {
-	return &accountService{repo: repo}
+func NewAccountService(repo repository.Repository, client client.AuthZClient) AccountService {
+	return &accountService{
+		repo:   repo,
+		client: client,
+	}
 }
 
 func (aS *accountService) GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error) {
 	if err := authorize(ctx, "get", "franchiseByID"); err != nil {
 		return nil, err
 	}
+	//aS.client.CheckAccess(ctx,)
 
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
@@ -81,6 +87,7 @@ func (aS *accountService) GetFranchiseByID(ctx context.Context, id string) (*mod
 }
 
 func (aS *accountService) GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error) {
+	//if res, err := client
 	if err := authorize(ctx, "get", "franchiseByID"); err != nil {
 		return nil, err
 	}

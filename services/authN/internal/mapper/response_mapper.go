@@ -1,11 +1,11 @@
 package mapper
 
 import (
-	"github.com/ashish19912009/zrms/services/authN/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/ashish19912009/zrms/services/authN/pb"
 )
 
-func LoginResponse(user *models.User, accessToken, refreshToken string) *pb.LoginResponse {
+func LoginResponse(user *model.User, accessToken, refreshToken string) *pb.LoginResponse {
 	return &pb.LoginResponse{
 		AccountId:    user.AccountID,
 		EmployeeId:   user.EmployeeID,
@@ -17,7 +17,7 @@ func LoginResponse(user *models.User, accessToken, refreshToken string) *pb.Logi
 	}
 }
 
-func VerifyTokenResponse(user *models.User, is_valid bool) *pb.VerifyTokenResponse {
+func VerifyTokenResponse(user *model.User, is_valid bool) *pb.VerifyTokenResponse {
 	return &pb.VerifyTokenResponse{
 		AccountId:   user.AccountID,
 		AccountType: user.AccountType,
