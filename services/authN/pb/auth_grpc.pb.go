@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: proto/auth.proto
+// source: auth.proto
 
 package pb
 
@@ -30,12 +30,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 //	export PATH=$(go env GOPATH)/bin:$PATH
-//	protoc --go_out=./ --go-grpc_out=./ proto/auth.proto
+//	protoc --go_out=../ --go-grpc_out=../ auth.proto
 type AuthServiceClient interface {
 	// Login RPC - used by clients (admins, partners, etc)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// VerifyToken RPC - used internally by other services to verify JWTs
-	VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*VerifyTokenResponse, error)
+	VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*AuthClaims, error)
 	// RefreshToken RPC - used to refresh token issued by the server to client
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Logout RPC - used to logout user
@@ -60,9 +60,9 @@ func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 	return out, nil
 }
 
-func (c *authServiceClient) VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*VerifyTokenResponse, error) {
+func (c *authServiceClient) VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*AuthClaims, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VerifyTokenResponse)
+	out := new(AuthClaims)
 	err := c.cc.Invoke(ctx, AuthService_VerifyToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -95,12 +95,12 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // for forward compatibility.
 //
 //	export PATH=$(go env GOPATH)/bin:$PATH
-//	protoc --go_out=./ --go-grpc_out=./ proto/auth.proto
+//	protoc --go_out=../ --go-grpc_out=../ auth.proto
 type AuthServiceServer interface {
 	// Login RPC - used by clients (admins, partners, etc)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// VerifyToken RPC - used internally by other services to verify JWTs
-	VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error)
+	VerifyToken(context.Context, *VerifyTokenRequest) (*AuthClaims, error)
 	// RefreshToken RPC - used to refresh token issued by the server to client
 	RefreshToken(context.Context, *RefreshTokenRequest) (*LoginResponse, error)
 	// Logout RPC - used to logout user
@@ -118,7 +118,7 @@ type UnimplementedAuthServiceServer struct{}
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServiceServer) VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error) {
+func (UnimplementedAuthServiceServer) VerifyToken(context.Context, *VerifyTokenRequest) (*AuthClaims, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyToken not implemented")
 }
 func (UnimplementedAuthServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*LoginResponse, error) {
@@ -245,5 +245,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/auth.proto",
+	Metadata: "auth.proto",
 }

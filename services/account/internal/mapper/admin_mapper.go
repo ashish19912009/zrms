@@ -8,16 +8,6 @@ import (
 	"github.com/ashish19912009/zrms/services/account/pb"
 )
 
-// Name       string `json:"name"`
-// 	Gender     string `json:"gender"`
-// 	Dob        string `json:"dob"`
-// 	MobileNo   string `json:"mobile_no"`
-// 	Email      string `json:"email"`
-// 	Address    string `json:"address"`
-// 	AadharNo   string `json:"aadhar_no"`
-// 	IsVerified string `json:"is_verified"`
-// 	Status     string `json:"status"`
-
 func AddFranchiseOwner_ProtoToModel(pbOwner *pb.FranchiseOwnerInput) (*model.FranchiseOwner, error) {
 	return &model.FranchiseOwner{
 		Name:       pbOwner.Name,

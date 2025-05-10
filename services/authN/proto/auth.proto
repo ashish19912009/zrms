@@ -1,16 +1,17 @@
 syntax = "proto3";
 
 package auth;
+import "google/protobuf/timestamp.proto";
 
 option go_package = "./pb;pb";
 //  export PATH=$(go env GOPATH)/bin:$PATH
-//  protoc --go_out=./ --go-grpc_out=./ proto/auth.proto
+//  protoc --go_out=../ --go-grpc_out=../ auth.proto
 service AuthService {
     // Login RPC - used by clients (admins, partners, etc)
     rpc Login           (LoginRequest)          returns(LoginResponse);
     
     // VerifyToken RPC - used internally by other services to verify JWTs
-    rpc VerifyToken   (VerifyTokenRequest)  returns(VerifyTokenResponse);
+    rpc VerifyToken   (VerifyTokenRequest)  returns(AuthClaims);
 
     // RefreshToken RPC - used to refresh token issued by the server to client
     rpc RefreshToken    (RefreshTokenRequest)   returns(LoginResponse);
@@ -55,13 +56,23 @@ message VerifyTokenRequest {
 }
 
 // Response contains token info if valid
-message VerifyTokenResponse {
-    string account_id           = 1;
-    string account_type         = 2;
-    string role                 = 3;
-    repeated string permissions = 4;
-    bool is_valid               = 5;
-}
+message AuthClaims {
+    string employee_id                  = 1;
+    string franchise_id                 = 2;
+    string account_type                 = 3;
+    string name                         = 4;
+    string mobile_no                    = 5;
+    RegisteredClaims registered_claims  = 6;
+  }
+
+  message RegisteredClaims {
+    string id                               = 1; // jti (UUID)
+    string subject                          = 2; // accountID
+    string issuer                           = 3;
+    repeated string audience                = 4;
+    google.protobuf.Timestamp issued_at     = 5;
+    google.protobuf.Timestamp expires_at    = 6;
+  }
 
 // Request to logout (used by interceptors)
 message LogoutRequest {

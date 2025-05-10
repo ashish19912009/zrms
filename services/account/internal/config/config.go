@@ -7,11 +7,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type AuthServiceConfig struct {
+	Host string `yaml:"host_authz"`
+	Port int    `yaml:"port_authz"`
+}
+
 type AppConfig struct {
-	Env               string `yaml:"env"`
-	Port              string `yaml:"port"`
-	JWTPrivateKeyPath string `yaml:"jwtPrivateKeyPath"`
-	JWTPublicKeyPath  string `yaml:"jwtPublicKeyPath"`
+	Env         string            `yaml:"env"`
+	Port        string            `yaml:"port"`
+	AuthService AuthServiceConfig `yaml:"auth_service"`
 }
 
 // LoadConfig reads the YAML config file and unmarshals it into a Config struct
