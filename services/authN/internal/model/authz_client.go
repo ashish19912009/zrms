@@ -24,15 +24,10 @@ type BatchCheckAccessResponse struct {
 	Results []*ResourceActionResult
 }
 
-type ResourceAction struct {
-	Resource string `json:"resource"`
-	Action   string `json:"action"`
-}
-
 type BatchCheckAccess struct {
 	AccountID   string            `json:"account_id"`
 	FranchiseID string            `json:"franchise_id"`
-	Resources   []ResourceAction  `json:"resource"`
+	Resources   []*ResourceAction `json:"resource"`
 	Context     map[string]string `json:"context,omitempty"`
 }
 

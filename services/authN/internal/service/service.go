@@ -7,13 +7,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/ashish19912009/zrms/services/authN/internal/client"
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 	"github.com/ashish19912009/zrms/services/authN/internal/mapper"
-	"github.com/ashish19912009/zrms/services/authN/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/ashish19912009/zrms/services/authN/internal/repository"
 	"github.com/ashish19912009/zrms/services/authN/internal/token"
 	"github.com/ashish19912009/zrms/services/authN/pb"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,6 +33,7 @@ type authService struct {
 	userRepo     repository.UserRepository
 	accessTTL    time.Duration
 	refreshTTL   time.Duration
+	client       client.AuthZClient
 }
 
 func NewAuthService(tokenManager token.TokenManager, tokenRepo repository.TokenRepository, userRepo repository.UserRepository) AuthService {
@@ -60,6 +63,17 @@ func NewAuthServiceWithTTL(
 	}
 }
 
+func verifyPassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		logger.Warn(constants.ErrInvalidPassword, map[string]interface{}{
+			"method": constants.Methods.VerifyPassword,
+		})
+		return false
+	}
+	return true
+}
+
 func getTokenTimer(ACCESS_TOKEN_TTL string, REFRESH_TOKEN_TTL string) (time.Duration, time.Duration) {
 	var defaultAccessTokenTimer time.Duration = 24 * time.Hour      // 24Hours
 	var defaultRefreshTokenTimer time.Duration = 24 * 7 * time.Hour // 7 Days
@@ -83,6 +97,11 @@ func getTokenTimer(ACCESS_TOKEN_TTL string, REFRESH_TOKEN_TTL string) (time.Dura
 }
 
 func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	input := mapper.LoginRequest(req)
 	if input.LoginID == "" || input.Password == "" || input.AccountType == "" {
 		logger.Error(constants.ValidationMissingCredentials, nil, map[string]interface{}{
@@ -92,7 +111,7 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	}
 
 	// Getting user information from database
-	var userDetails *models.User
+	var userDetails *model.User
 	userDetails, err := s.userRepo.GetUser(ctx, input.LoginID, input.AccountType)
 	if err != nil {
 		return nil, errors.New(constants.WrongUsernamePassword)
@@ -101,8 +120,10 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 		return nil, status.Error(codes.Internal, constants.UserDataMissing)
 	}
 	if userDetails.Password != "" {
-		isCorrectPassword := s.userRepo.VerifyPassword(userDetails.Password, input.Password)
+		isCorrectPassword := verifyPassword(userDetails.Password, input.Password)
 		if isCorrectPassword {
+			allResources, err := s.userRepo.GetFranchiseRolePermissions(ctx, userDetails.FranchiseID)
+			getBatchPermission, err := s.client.BatchCheckAccess(ctx, userDetails.AccountID, userDetails.FranchiseID, allResources)
 			accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.EmployeeID, userDetails.AccountID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, s.accessTTL)
 			if err != nil {
 				logger.Error(constants.FailedToGenerateAct, err, map[string]interface{}{
@@ -155,6 +176,11 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 }
 
 func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	var input = mapper.RefreshTokenRequest(req)
 	if input.RefreshToken == "" {
 		logger.Error(constants.AuthRefreshRequired, nil, map[string]interface{}{
@@ -186,7 +212,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 			return nil, fmt.Errorf("%s: %w", constants.AuthRefreshFailure, err)
 		}
 		// Getting user information from database
-		var userDetails *models.User
+		var userDetails *model.User
 		userDetails, err = s.userRepo.GetUser(ctx, userInfoFromToken.AccountID, userInfoFromToken.AccountType)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", constants.WrongUsernamePassword, err)
@@ -239,6 +265,11 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 }
 
 func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	input := mapper.VerifyTokenRequest(req)
 	if input.AccessToken == "" {
 		logger.Error(constants.AuthAccessRequired, nil, map[string]interface{}{
@@ -260,7 +291,7 @@ func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenReques
 		"user":   claims.EmployeeID,
 	})
 
-	return mapper.VerifyTokenResponse(&models.User{
+	return mapper.VerifyTokenResponse(&model.User{
 		AccountID:   claims.AccountID,
 		AccountType: claims.AccountType,
 		Role:        claims.Role,
@@ -269,6 +300,11 @@ func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenReques
 }
 
 func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	input := mapper.LogoutRequestInput(req)
 	if input.RefreshToken == "" {
 		logger.Error(constants.ErrMissingRefreshToken, nil, map[string]interface{}{

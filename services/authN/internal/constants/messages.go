@@ -13,37 +13,39 @@ var EnvVariable = struct {
 
 // List of Methods
 var Methods = struct {
-	Login                string
-	Logout               string
-	AccessToken          string
-	RefreshToken         string
-	VerifyToken          string
-	StoreToken           string
-	CheckToken           string
-	DeleteToken          string
-	GetUserByMobile      string
-	VerifyPassword       string
-	GenerateAccToken     string
-	GenerateRefreshToken string
-	LoadConfig           string
-	Validate             string
-	GetUser              string
+	Login                       string
+	Logout                      string
+	AccessToken                 string
+	RefreshToken                string
+	VerifyToken                 string
+	StoreToken                  string
+	CheckToken                  string
+	DeleteToken                 string
+	GetUserByMobile             string
+	VerifyPassword              string
+	GenerateAccToken            string
+	GenerateRefreshToken        string
+	LoadConfig                  string
+	Validate                    string
+	GetUser                     string
+	GetFranchiseRolePermissions string
 }{
-	Login:                "Login",
-	Logout:               "Logout",
-	Validate:             "Validate",
-	AccessToken:          "AccessToken",
-	RefreshToken:         "RefreshToken",
-	VerifyToken:          "ValidateToken",
-	StoreToken:           "StoreToken",
-	CheckToken:           "CheckToken",
-	DeleteToken:          "DeleteToken",
-	GetUserByMobile:      "GetUserByMobile",
-	VerifyPassword:       "VerifyPassword",
-	GenerateAccToken:     "GenerateAccessToken",
-	GenerateRefreshToken: "GenerateRefreshToken",
-	LoadConfig:           "LoadConfig",
-	GetUser:              "GetUser",
+	Login:                       "Login",
+	Logout:                      "Logout",
+	Validate:                    "Validate",
+	AccessToken:                 "AccessToken",
+	RefreshToken:                "RefreshToken",
+	VerifyToken:                 "ValidateToken",
+	StoreToken:                  "StoreToken",
+	CheckToken:                  "CheckToken",
+	DeleteToken:                 "DeleteToken",
+	GetUserByMobile:             "GetUserByMobile",
+	VerifyPassword:              "VerifyPassword",
+	GenerateAccToken:            "GenerateAccessToken",
+	GenerateRefreshToken:        "GenerateRefreshToken",
+	LoadConfig:                  "LoadConfig",
+	GetUser:                     "GetUser",
+	GetFranchiseRolePermissions: "GetFranchiseRolePermissions",
 }
 
 const (
@@ -79,6 +81,7 @@ const (
 	GenerateAccessToken       = "generate access token"
 	RefreshTokenExistence     = "refresh token existence"
 	GenerateRefreshToken      = "generate refresh token"
+	Repository                = "Repository"
 
 	// Config error handling messages
 	ConfigOverride          = "overriding config type with environment variable: %s"
@@ -108,13 +111,27 @@ const (
 	ValidationInvalidRole        = "user role is invalid"
 
 	// Database Messages
-	DBConnectionSuccess    = "connected to the database successfully"
-	DBConnectionFailure    = "failed to connect to the database"
-	DBQueryError           = "database query execution failed"
-	DBRecordNotFound       = "record not found"
-	ErrUnsupportedDatabase = "unsupported database"
-	ErrKeyNotFound         = "key not found"
-	ErrInvalidConfig       = "invalid config"
+	DBConnectionSuccess         = "connected to the database successfully"
+	DBConnectionFailure         = "failed to connect to the database"
+	DBQueryError                = "database query execution failed"
+	DBRecordNotFound            = "record not found"
+	ErrUnsupportedDatabase      = "unsupported database"
+	ErrKeyNotFound              = "key not found"
+	ErrInvalidConfig            = "invalid config"
+	DBConnectionNil             = "database connection is nil"
+	FailedToRetrv               = "failed to retrive data from last query performed"
+	BuildInsertQuery            = "something went wrong inside query insert builder function"
+	BuildUpdateQuery            = "something went wrong inside query update builder function"
+	BuildSelectQuery            = "something went wrong inside query select builder function"
+	BuildDeleteQuery            = "something went wrong inside query delete builder function"
+	WrongFetchingData           = "something went wrong while fetching data from cache memory"
+	NoColumProvided             = "no columns provided"
+	UnauthorizedSchema          = "unauthorized schema: %s"
+	UnauthorizedTable           = "unauthorized table: %s"
+	UnauthorizedCloumn          = "unauthorized column: %s"
+	UnauthorizedConditionColumn = "unauthorized condition column: %s"
+	UnauthorizedReturningColumn = "unauthorized returning column: %s"
+	UnauthorizedJoinTable       = "unauthorized join table: %s"
 
 	// System & Server Messages
 	SystemStartup  = "auth service is starting up..."

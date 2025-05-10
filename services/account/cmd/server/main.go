@@ -1,15 +1,12 @@
-package server
+package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"time"
 
-	"github.com/ashish19912009/zrms/services/account/internal/auth"
 	"github.com/ashish19912009/zrms/services/account/internal/client"
 	config "github.com/ashish19912009/zrms/services/account/internal/config"
 	"github.com/ashish19912009/zrms/services/account/internal/handler"
@@ -21,7 +18,9 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
+
 var appEnv string
+
 func loadEnv() {
 	appEnv = os.Getenv("APP_ENV")
 	if appEnv == "" {
@@ -29,7 +28,7 @@ func loadEnv() {
 	}
 
 	// load env file accordingly
-	envFile := fmt.Sprintf(".env.%s", appEnv)
+	envFile := fmt.Sprintf("../../env/.env.%s", appEnv)
 	if err := godotenv.Load(envFile); err != nil {
 		log.Printf("No %s file found, continuing without it", envFile)
 	}
@@ -52,36 +51,36 @@ func connectDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func mockValidateToken(token string) (map[string]interface{}, error) {
-	if token == "valid-token" {
-		return map[string]interface{}{"role": "admin"}, nil
-	}
-	return nil, errors.New("unauthorized")
-}
-
 func main() {
 	loadEnv()
-	config_yaml_path := fmt.Sprintf("../../config/config.%s.yaml",appEnv)
+	config_yaml_path := fmt.Sprintf("../../config/config.%s.yaml", appEnv)
 	cfg, err := config.LoadConfig(config_yaml_path)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 	db, err := connectDB()
 	if err != nil {
 		log.Fatalf("DB error: %v", err)
 	}
 	defer db.Close()
 
-	authzClient, conn, err := client.NewAuthZServiceClient(cfg.AuthService.Host, cfg.AuthService.Port)
+	authzClient, err := client.NewAuthZServiceClient(cfg.AuthService.Host, cfg.AuthService.Port)
 	if err != nil {
 		logger.Fatal("failed to connect to auth service: %v", err, nil)
 	}
-	defer conn.Close()
+	defer authzClient.Close()
 
 	repo := repository.NewRepository(db)
-	svc := service.NewAccountService(repo)
-	jwtManager := auth.NewJWTManager("secret-key", time.Hour)
-	grpcHandler := handler.NewGRPCHandler(svc, jwtManager)
+	adminRepo := repository.NewAdminRepository(db)
+	svc := service.NewAccountService(repo, authzClient)
+	svcAdmin, err := service.NewAdminService(adminRepo, repo, authzClient)
+	if err != nil {
+		logger.Fatal("failed to connect to admin auth service: %v", err, nil)
+	}
+	grpcHandler := handler.NewGRPCHandler(svc, svcAdmin)
 
 	grpcPort := os.Getenv("GRPC_PORT")
-	if grpcPort != "" {
+	if grpcPort == "" {
 		grpcPort = "50051"
 	}
 
@@ -97,7 +96,7 @@ func main() {
 	)
 	pb.RegisterAccountServiceServer(grpcServer, grpcHandler)
 
-	log.Printf("gRPC server running on port %s in %s enviroment", grpcPort, os.Getenv("APP_ENV"))
+	log.Printf("✅ Account gRPC server running on %s in %s enviroment", grpcPort, os.Getenv("APP_ENV"))
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to serve gRPC: %v", err)
 	}

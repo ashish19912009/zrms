@@ -296,7 +296,7 @@ message GetFranchiseAccountsResponse {
 }
 
 service AccountService {
-    rpc CreateFranchise(AddFranchiseRequest)    returns (AddFranchiseResponse);
+    rpc CreateFranchise(AddFranchiseRequest)    returns (AddResponse);
     rpc UpdateFranchise(UpdateFranchiseRequest) returns (UpdateResponse);
     rpc UpdateFranchiseStatus(UpdateFranchiseStatusRequest) returns (UpdateResponse);
     rpc DeleteFranchise(DeleteFranchiseRequest) returns(DeletedResponse);

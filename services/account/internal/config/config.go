@@ -9,7 +9,7 @@ import (
 
 type AuthServiceConfig struct {
 	Host string `yaml:"host_authz"`
-	Port int    `yaml:"port_authz"`
+	Port string `yaml:"port_authz"`
 }
 
 type AppConfig struct {

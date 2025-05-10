@@ -5,7 +5,7 @@ package mockRepo
 import (
 	context "context"
 
-	models "github.com/ashish19912009/zrms/services/authN/internal/models"
+	models "github.com/ashish19912009/zrms/services/authN/internal/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

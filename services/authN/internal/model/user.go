@@ -1,7 +1,8 @@
-package models
+package model
 
 type User struct {
 	AccountID   string   `json:"account_id"`
+	FranchiseID string   `json:"franchise_id"`
 	EmployeeID  string   `json:"employee_id"`
 	AccountType string   `json:"account_type"`
 	Name        string   `json:"name"`

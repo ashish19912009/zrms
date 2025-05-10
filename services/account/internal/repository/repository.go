@@ -8,6 +8,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
+	_ "github.com/lib/pq"
 )
 
 /**

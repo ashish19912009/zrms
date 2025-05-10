@@ -38,7 +38,7 @@ const (
 	FailedToLoadConfig        = "failed to load config: %v"
 	FailedToStartCache        = "Failed to start cache db"
 	FailedToStartService      = "failed to initialize AuthZ service: %v"
-	GRPCServerRunning         = "✅ AuthZ gRPC server running on %s"
+	GRPCServerRunning         = "✅ AuthZ gRPC server running on %s in %s enviroment"
 	FailedToStartServer       = "failed to serve gRPC server: %v"
 	FailedToListen            = "failed to listen: %v"
 	FailedIniStrManager       = "Failed to initialize store manager: %v"

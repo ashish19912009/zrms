@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ashish19912009/zrms/services/authZ/internal/constants"
-	"github.com/ashish19912009/zrms/services/authZ/internal/logger"
+	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 )
 
 // QueryBuilderOptions holds optional settings for building queries.

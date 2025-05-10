@@ -11,14 +11,15 @@ import (
 
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
-	"github.com/ashish19912009/zrms/services/authN/internal/models"
+	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type TokenManager interface {
-	GenerateAccessToken(accountID, employeeID, mobileNo, accountType, name string, permissions models.PermissionsArray, duration time.Duration) (string, error)
-	GenerateRefreshToken(accountID, accountType string, permissions models.PermissionsArray, duration time.Duration) (string, error)
-	VerifyToken(tokenString string) (*models.AuthClaims, error)
+	GenerateAccessToken(accountID, employeeID, mobileNo, accountType, name string, permissions, duration time.Duration) (string, error)
+	GenerateRefreshToken(accountID, accountType string, permissions, duration time.Duration) (string, error)
+	VerifyToken(tokenString string) (*model.AuthClaims, error)
 }
 
 type jwtManager struct {
@@ -83,23 +84,24 @@ func loadPublicKeyFromFile(path string) (*rsa.PublicKey, error) {
 }
 
 // GenerateToken creates a new access token
-func (j *jwtManager) GenerateAccessToken(employeeID, accountID, mobileNo, accountType, name string, permissions models.PermissionsArray, duration time.Duration) (string, error) {
+func (j *jwtManager) GenerateAccessToken(employeeID, accountID, mobileNo, accountType, name string, duration time.Duration) (string, error) {
 	if employeeID == "" || accountID == "" || mobileNo == "" || accountType == "" || name == "" {
 		logger.Error(constants.TokenParamMissing, nil, map[string]interface{}{
 			"method": constants.Methods.GenerateAccToken,
 		})
 		return "", fmt.Errorf(constants.TokenParamMissing)
 	}
-	claims := models.AuthClaims{
+	claims := model.AuthClaims{
 		EmployeeID:  employeeID,
-		AccountID:   accountID,
 		AccountType: accountType,
 		Name:        name,
 		MobileNo:    mobileNo,
-		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
+			Subject:   accountID,
 			Issuer:    j.issuer,
 			Audience:  jwt.ClaimStrings{j.audience},
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		},
 	}
@@ -126,7 +128,7 @@ func (j *jwtManager) GenerateAccessToken(employeeID, accountID, mobileNo, accoun
 }
 
 // GenerateRefreshToken creates a new refresh token
-func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, permissions models.PermissionsArray, duration time.Duration) (string, error) {
+func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, duration time.Duration) (string, error) {
 	if accountID == "" {
 		logger.Error(constants.TokenParamMissing, nil, map[string]interface{}{
 			"method": constants.Methods.GenerateRefreshToken,
@@ -134,14 +136,14 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, permiss
 		return "", fmt.Errorf(constants.TokenParamMissing)
 	}
 
-	claims := models.AuthClaims{
+	claims := model.AuthClaims{
 		AccountID:   accountID,
 		AccountType: accountType,
-		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    j.issuer,
 			Audience:  jwt.ClaimStrings{j.audience},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 	tokenChan := make(chan string)
@@ -167,8 +169,8 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, permiss
 
 // ValidateToken verifies the signature and expiration of an access token
 
-func (j *jwtManager) VerifyToken(tokenString string) (*models.AuthClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &models.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
+func (j *jwtManager) VerifyToken(tokenString string) (*model.AuthClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &model.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New(constants.ErrUnexpectedSigningMethod)
 		}
@@ -179,7 +181,7 @@ func (j *jwtManager) VerifyToken(tokenString string) (*models.AuthClaims, error)
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*models.AuthClaims)
+	claims, ok := token.Claims.(*model.AuthClaims)
 	if !ok || !token.Valid {
 		return nil, errors.New(constants.ErrInvalidToken)
 	}
