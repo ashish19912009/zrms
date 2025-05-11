@@ -153,7 +153,7 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, duratio
 	errChan := make(chan error)
 
 	go func() {
-		token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		signedToken, err := token.SignedString(j.privateKey)
 		if err != nil {
 			errChan <- err

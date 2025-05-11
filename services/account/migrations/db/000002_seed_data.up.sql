@@ -33,11 +33,11 @@ VALUES
 
 INSERT INTO outlet.roles (id, franchise_id, name, description, is_default, created_at, updated_at)
   VALUES
-    (gen_random_uuid(), NULL, 'admin', 'Full control over the franchise, able to manage all settings', true, now(), now()),
-    (gen_random_uuid(), NULL, 'manager', 'Can manage orders, staff, and settings related to the franchise', false, now(), now()),
-    (gen_random_uuid(), NULL, 'packer', 'Responsible for packing orders for delivery', false, now(), now()),
-    (gen_random_uuid(), NULL, 'delivery_agent', 'Delivers packed food to customers', false, now(), now()),
-    (gen_random_uuid(), NULL, 'cook', 'Prepares food for the orders', false, now(), now())
+    (gen_random_uuid(), '5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a', 'admin', 'Full control over the franchise, able to manage all settings', true, now(), now()),
+    (gen_random_uuid(), '5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a', 'manager', 'Can manage orders, staff, and settings related to the franchise', false, now(), now()),
+    (gen_random_uuid(), '5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a', 'packer', 'Responsible for packing orders for delivery', false, now(), now()),
+    (gen_random_uuid(), '5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a', 'delivery_agent', 'Delivers packed food to customers', false, now(), now()),
+    (gen_random_uuid(), '5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a', 'cook', 'Prepares food for the orders', false, now(), now())
 
 INSERT INTO outlet.permissions (key, description, created_at)
   VALUES

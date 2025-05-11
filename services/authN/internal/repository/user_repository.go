@@ -43,20 +43,20 @@ func (r *userRepository) GetUser(ctx context.Context, indentifier string, accoun
 
 	// Define columns with alias prefixes
 	columns := []string{
-		"account_id",
+		"id",
 		"franchise_id",
 		"employee_id",
+		"password_hash",
 		"account_type",
 		"name",
 		"mobile_no",
-		"password_hash",
-		"role",
-		"permissions",
+		"email",
+		"role_id",
 		"status",
 	}
 
 	conditions := map[string]any{
-		"account_id":   indentifier,
+		"login_id":     indentifier,
 		"account_type": accountType,
 	}
 
@@ -77,17 +77,23 @@ func (r *userRepository) GetUser(ctx context.Context, indentifier string, accoun
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("qquery", map[string]interface{}{
+		"qquery":     query,
+		"args":       args,
+		"conditions": conditions,
+	})
 	var user model.User
 
 	if err := dbutils.ExecuteAndScanRow(ctx, method, r.db, query, args,
 		&user.AccountID,
 		&user.FranchiseID,
 		&user.EmployeeID,
+		&user.Password,
 		&user.AccountType,
 		&user.Name,
 		&user.MobileNo,
-		&user.Password,
-		&user.Role,
+		&user.Email,
+		&user.RoleID,
 		&user.Status); err != nil {
 		logger.Error(constants.DBQueryError, err, nil)
 		return nil, err
