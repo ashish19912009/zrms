@@ -9,17 +9,19 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/validations"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type AdminService interface {
-	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error)
-	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error)
+	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner, reqPerm *model.Permission) (*model.AddResponse, error)
+	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner, reqPerm *model.Permission) (*model.UpdateResponse, error)
 
-	CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error)
-	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error)
-	UpdateFranchiseStatus(ctx context.Context, f_status *model.FranchiseStatusRequest) (*model.UpdateResponse, error)
-	DeleteFranchise(ctx context.Context, f_del *model.DeleteFranchiseRequest) (*model.DeletedResponse, error)
-	GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error)
+	CreateFranchise(ctx context.Context, franchise *model.Franchise, reqPerm *model.Permission) (*model.AddResponse, error)
+	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise, reqPerm *model.Permission) (*model.UpdateResponse, error)
+	UpdateFranchiseStatus(ctx context.Context, f_status *model.FranchiseStatusRequest, reqPerm *model.Permission) (*model.UpdateResponse, error)
+	DeleteFranchise(ctx context.Context, f_del *model.DeleteFranchiseRequest, reqPerm *model.Permission) (*model.DeletedResponse, error)
+	GetAllFranchises(ctx context.Context, page int32, limit int32, reqPerm *model.Permission) ([]model.FranchiseResponse, error)
 }
 
 type adminService struct {
@@ -49,7 +51,7 @@ func authorize(ctx context.Context, action, resource string) error {
 
 // ---------------------------------------------------------------
 
-func (ad *adminService) CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error) {
+func (ad *adminService) CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner, reqPerm *model.Permission) (*model.AddResponse, error) {
 	if err := authorize(ctx, "create", "franchise"); err != nil {
 		return nil, err
 	}
@@ -72,7 +74,7 @@ func (ad *adminService) CreateNewOwner(ctx context.Context, owner *model.Franchi
 	return newFranchiseOwner, nil
 }
 
-func (ad *adminService) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error) {
+func (ad *adminService) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner, reqPerm *model.Permission) (*model.UpdateResponse, error) {
 	if err := authorize(ctx, "create", "franchise"); err != nil {
 		return nil, err
 	}
@@ -93,35 +95,39 @@ func (ad *adminService) UpdateNewOwner(ctx context.Context, id string, owner *mo
 	return newFranchiseOwner, nil
 }
 
-func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error) {
-	accessResponse, err := ad.client.CheckAccess(ctx, "66666666-6666-6666-6666-666666666666", "22222222-2222-2222-2222-222222222222", "account", "manage")
+func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Franchise, reqPerm *model.Permission) (*model.AddResponse, error) {
+	reqCtxValue := ctx.Value(model.RequestContextKey)
+	if reqCtxValue == nil {
+		return nil, status.Error(codes.Internal, "missing request context or required params")
+	}
+
+	reqCtx, ok := reqCtxValue.(*model.RequestContext)
+	if !ok || reqCtx.Claims == nil {
+		return nil, status.Error(codes.Internal, "invalid request context")
+	}
+	accessResponse, err := ad.client.CheckAccess(ctx, reqCtx.Claims.RegisteredClaims.Subject, reqCtx.Claims.FranchiseID, reqPerm.Resource, reqPerm.Action)
+	if err != nil || !accessResponse.Allowed {
+		return nil, status.Error(codes.PermissionDenied, accessResponse.Reason)
+	}
+	// 💡 Run validations before calling repo
+	// check if business name already registered or not
+	franchiseExists, err := ad.repo.GetFranchiseByBusinessName(ctx, franchise.BusinessName)
 	if err != nil {
 		return nil, err
 	}
-	if accessResponse.Allowed {
-		// 💡 Run validations before calling repo
-		// check if business name already registered or not
-		franchiseExists, err := ad.repo.GetFranchiseByBusinessName(ctx, franchise.BusinessName)
-		if err != nil {
-			return nil, err
-		}
 
-		var newFranchise *model.AddResponse
-		if franchiseExists != nil && franchiseExists.BusinessName == franchise.BusinessName && franchiseExists.Franchise_Owner_id == franchise.Franchise_Owner_id {
-			return nil, errors.New(constants.BusinessAlreadyExist)
-		} else {
-			newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return newFranchise, nil
-	} else {
-		return nil, errors.New(accessResponse.Reason)
+	if franchiseExists != nil && franchiseExists.BusinessName == franchise.BusinessName && franchiseExists.Franchise_Owner_id == franchise.Franchise_Owner_id {
+		return nil, status.Error(codes.PermissionDenied, constants.BusinessAlreadyExist)
 	}
+	var newFranchise *model.AddResponse
+	newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
+	if err != nil {
+		return nil, err
+	}
+	return newFranchise, nil
 }
 
-func (ad *adminService) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error) {
+func (ad *adminService) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise, reqPerm *model.Permission) (*model.UpdateResponse, error) {
 	if err := authorize(ctx, "update", "franchise"); err != nil {
 		return nil, err
 	}
@@ -146,7 +152,7 @@ func (ad *adminService) UpdateFranchise(ctx context.Context, id string, franchis
 	return rowsAffected, nil
 }
 
-func (ad *adminService) UpdateFranchiseStatus(ctx context.Context, f_status *model.FranchiseStatusRequest) (*model.UpdateResponse, error) {
+func (ad *adminService) UpdateFranchiseStatus(ctx context.Context, f_status *model.FranchiseStatusRequest, reqPerm *model.Permission) (*model.UpdateResponse, error) {
 	if err := authorize(ctx, "update_status", "franchise"); err != nil {
 		return nil, err
 	}
@@ -165,7 +171,7 @@ func (ad *adminService) UpdateFranchiseStatus(ctx context.Context, f_status *mod
 	return nil, nil
 }
 
-func (ad *adminService) DeleteFranchise(ctx context.Context, f_del *model.DeleteFranchiseRequest) (*model.DeletedResponse, error) {
+func (ad *adminService) DeleteFranchise(ctx context.Context, f_del *model.DeleteFranchiseRequest, reqPerm *model.Permission) (*model.DeletedResponse, error) {
 	// check if the admin is authorized to delete user or not
 	if err := authorize(ctx, "delete", "franchise"); err != nil {
 		return nil, err
@@ -186,7 +192,7 @@ func (ad *adminService) DeleteFranchise(ctx context.Context, f_del *model.Delete
 	}, nil
 }
 
-func (ad *adminService) GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error) {
+func (ad *adminService) GetAllFranchises(ctx context.Context, page int32, limit int32, reqPerm *model.Permission) ([]model.FranchiseResponse, error) {
 	if err := authorize(ctx, "read", "franchise"); err != nil {
 		return nil, err
 	}

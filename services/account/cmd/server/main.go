@@ -17,6 +17,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/pb"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 var appEnv string
@@ -54,6 +55,7 @@ func connectDB() (*sql.DB, error) {
 func main() {
 	loadEnv()
 	config_yaml_path := fmt.Sprintf("../../config/config.%s.yaml", appEnv)
+	var cfg *config.AppConfig
 	cfg, err := config.LoadConfig(config_yaml_path)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -64,11 +66,19 @@ func main() {
 	}
 	defer db.Close()
 
-	authzClient, err := client.NewAuthZServiceClient(cfg.AuthService.Host, cfg.AuthService.Port)
+	// connecting with authZ (authorization) micro service
+	authzClient, err := client.NewAuthZServiceClient(cfg.AuthZService.Host, cfg.AuthZService.Port)
 	if err != nil {
-		logger.Fatal("failed to connect to auth service: %v", err, nil)
+		logger.Fatal("failed to connect to authz service: %v", err, nil)
 	}
 	defer authzClient.Close()
+
+	// connecting with authN (authentication) micro service
+	authnClient, err := client.NewAuthNServiceClient(cfg.AuthNService.Host, cfg.AuthNService.Port)
+	if err != nil {
+		logger.Fatal("failed to connect to authn service: %v", err, nil)
+	}
+	defer authnClient.Close()
 
 	repo := repository.NewRepository(db)
 	adminRepo := repository.NewAdminRepository(db)
@@ -79,25 +89,22 @@ func main() {
 	}
 	grpcHandler := handler.NewGRPCHandler(svc, svcAdmin)
 
-	grpcPort := os.Getenv("GRPC_PORT")
-	if grpcPort == "" {
-		grpcPort = "50051"
-	}
-
-	listener, err := net.Listen("tcp", ":"+grpcPort)
+	// Create listner
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", cfg.Port))
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
+		log.Fatalf("failed to listen: %v", err)
 	}
-
-	authInterceptor := middleware.NewAuthInterceptor("my-secret-key", "admin", "superadmin")
+	authInterceptor := middleware.NewAuthInterceptor(authzClient, authnClient)
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(authInterceptor.Unary()),
 	)
 	pb.RegisterAccountServiceServer(grpcServer, grpcHandler)
-
-	log.Printf("✅ Account gRPC server running on %s in %s enviroment", grpcPort, os.Getenv("APP_ENV"))
-	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Failed to serve gRPC: %v", err)
+	if cfg.Env != "production" {
+		reflection.Register(grpcServer)
+	}
+	log.Printf("✅ Account gRPC server running on %s in %s enviroment", cfg.Port, appEnv)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
