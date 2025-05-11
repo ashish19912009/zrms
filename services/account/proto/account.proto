@@ -33,11 +33,16 @@ message PaginationRequest {
     int32 limit = 2;
   }
   
-  message PaginationResponse {
+message PaginationResponse {
     int32 page = 1;
     int32 limit = 2;
     int32 total = 3;
   }
+
+message Permission {
+    string Resource     = 1;
+    string Action       = 2;
+}
 
 // Message representing an Franchise in the system
 message FranchiseInput {
@@ -107,16 +112,19 @@ message AccountInput {
 
 message AddFranchiseRequest {
     FranchiseInput franchise_details    = 1;
+    Permission permission               = 2;
 }
 
 message UpdateFranchiseRequest {
     string id                           = 1;
     FranchiseInput franchise_details    = 2;
+    Permission permission               = 3;
 }
 
 message UpdateFranchiseStatusRequest{
-    string id       = 1;
-    string status   = 2;
+    string id               = 1;
+    string status           = 2;
+    Permission permission   = 3;
 }
 
 // -> Response
@@ -127,8 +135,9 @@ message AddFranchiseResponse {
 
 // DELETE
 message DeleteFranchiseRequest {
-    string id       = 1;
-    string admin_id = 2;
+    string id               = 1;
+    string admin_id         = 2;
+    Permission permission   = 3;
 }
 
 message AddFranchiseDocumentRequest {
@@ -161,6 +170,7 @@ message UpdateFranchiseAddressRequest {
 
 message AddFranchiseOwnerRequest{
     FranchiseOwnerInput owner   = 1;
+    Permission permission       = 2;
 }
 
 message UpdateFranchiseOwnerRequest{
@@ -192,7 +202,8 @@ message DeleteFranchiseAccountRequest {
 
 // GET
 message GetFranchiseByIDRequest {
-    string id = 1;
+    string id               = 1;
+    Permission permission   = 2;
 }
 
 //-> Response
@@ -221,6 +232,7 @@ message GetFranchiseCompleteDetailsResponse {
 message GetFranchisesRequest {
     PaginationRequest pagination = 1;
     string query                 = 2;
+    Permission permission        = 3;
 }
 
 //-> Response

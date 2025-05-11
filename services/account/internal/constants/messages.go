@@ -173,6 +173,7 @@ const (
 	MappingFromModelToProto     = "something went wrong while mapping model to proto"
 	SomethinWentWrongOnNew      = "somthing went wrong while creating: %s"
 	SomethinWentWrongOnUpdate   = "somthing went wrong while updating: %s"
+	MissingPermission           = "missing permissions: %v"
 
 	// Token layer
 	ErrInvalidToken            = "invalid token"

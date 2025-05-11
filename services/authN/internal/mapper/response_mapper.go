@@ -3,6 +3,7 @@ package mapper
 import (
 	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/ashish19912009/zrms/services/authN/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func LoginResponse(user *model.User, accessToken, refreshToken string) *pb.LoginResponse {
@@ -17,13 +18,22 @@ func LoginResponse(user *model.User, accessToken, refreshToken string) *pb.Login
 	}
 }
 
-func VerifyTokenResponse(user *model.User, is_valid bool) *pb.VerifyTokenResponse {
-	return &pb.VerifyTokenResponse{
-		AccountId:   user.AccountID,
-		AccountType: user.AccountType,
-		Permissions: user.Permissions,
-		Role:        user.Role,
-		IsValid:     is_valid,
+func VerifyTokenResponse(usrClaims *model.AuthClaims) *pb.AuthClaims {
+	var rClaims = &pb.RegisteredClaims{
+		Id:        usrClaims.RegisteredClaims.ID,
+		Subject:   usrClaims.RegisteredClaims.Subject,
+		Issuer:    usrClaims.RegisteredClaims.Issuer,
+		Audience:  usrClaims.RegisteredClaims.Audience,
+		IssuedAt:  timestamppb.New(usrClaims.RegisteredClaims.IssuedAt.Time),
+		ExpiresAt: timestamppb.New(usrClaims.RegisteredClaims.ExpiresAt.Time),
+	}
+	return &pb.AuthClaims{
+		EmployeeId:       usrClaims.EmployeeID,
+		FranchiseId:      usrClaims.FranchiseID,
+		AccountType:      usrClaims.AccountType,
+		Name:             usrClaims.Name,
+		MobileNo:         usrClaims.MobileNo,
+		RegisteredClaims: rClaims,
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 
 type AuthClaims struct {
 	EmployeeID  string `json:"employee_id"`
+	FranchiseID string `json:"franchise_id"`
 	AccountType string `json:"account_type"`
 	Name        string `json:"name"`
 	MobileNo    string `json:"mobile_no"`

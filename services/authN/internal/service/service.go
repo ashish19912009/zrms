@@ -23,7 +23,7 @@ import (
 type AuthService interface {
 	Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error)
 	RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.LoginResponse, error)
-	VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error)
+	VerifyAccessToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.AuthClaims, error)
 	Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error)
 }
 
@@ -122,9 +122,9 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	if userDetails.Password != "" {
 		isCorrectPassword := verifyPassword(userDetails.Password, input.Password)
 		if isCorrectPassword {
-			allResources, err := s.userRepo.GetFranchiseRolePermissions(ctx, userDetails.FranchiseID)
-			getBatchPermission, err := s.client.BatchCheckAccess(ctx, userDetails.AccountID, userDetails.FranchiseID, allResources)
-			accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.EmployeeID, userDetails.AccountID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, s.accessTTL)
+			//allResources, err := s.userRepo.GetFranchiseRolePermissions(ctx, userDetails.FranchiseID)
+			//getBatchPermission, err := s.client.BatchCheckAccess(ctx, userDetails.AccountID, userDetails.FranchiseID, allResources)
+			accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.EmployeeID, userDetails.FranchiseID, userDetails.AccountID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, s.accessTTL)
 			if err != nil {
 				logger.Error(constants.FailedToGenerateAct, err, map[string]interface{}{
 					"method": constants.Methods.Login,
@@ -133,7 +133,7 @@ func (s *authService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 				return nil, fmt.Errorf(constants.FailedToGenerateAct, err)
 			}
 
-			refreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, s.refreshTTL)
+			refreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, s.refreshTTL)
 			if err != nil {
 				logger.Error(constants.FailedToGenerateRsh, err, map[string]interface{}{
 					"method": constants.Methods.Login,
@@ -189,7 +189,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 		return nil, fmt.Errorf(constants.AuthRefreshRequired)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(input.RefreshToken)
+	claims, err := s.tokenManager.VerifyRefreshToken(input.RefreshToken)
 	if err != nil {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.RefreshToken,
@@ -198,7 +198,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	}
 
 	// Check if refresh token exists in in_memory
-	exists, err := s.tokenRepo.CheckToken(ctx, constants.Refresh_token, input.AccountID, input.RefreshToken)
+	exists, err := s.tokenRepo.CheckToken(ctx, constants.Refresh_token, claims.RegisteredClaims.Subject, input.RefreshToken)
 	if err != nil || !exists {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.RefreshToken,
@@ -207,20 +207,16 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 		return nil, fmt.Errorf("%s: %w", constants.AuthRshTokenInvalid, err)
 	}
 	if exists {
-		userInfoFromToken, err := s.tokenManager.VerifyToken(input.RefreshToken)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", constants.AuthRefreshFailure, err)
-		}
 		// Getting user information from database
 		var userDetails *model.User
-		userDetails, err = s.userRepo.GetUser(ctx, userInfoFromToken.AccountID, userInfoFromToken.AccountType)
+		userDetails, err = s.userRepo.GetUser(ctx, claims.RegisteredClaims.Subject, claims.AccountType)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", constants.WrongUsernamePassword, err)
 		}
 		if userDetails == nil {
 			return nil, status.Error(codes.Internal, constants.UserDataMissing)
 		}
-		accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.AccountID, userDetails.EmployeeID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, userDetails.Permissions, s.accessTTL)
+		accessToken, err := s.tokenManager.GenerateAccessToken(userDetails.AccountID, userDetails.FranchiseID, userDetails.EmployeeID, userDetails.MobileNo, userDetails.AccountType, userDetails.Name, s.accessTTL)
 		if err != nil {
 			logger.Error(constants.FailedToGenerateAct, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
@@ -229,7 +225,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 			return nil, fmt.Errorf(constants.FailedToGenerateAct, err)
 		}
 
-		newRefreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, userDetails.Permissions, s.refreshTTL)
+		newRefreshToken, err := s.tokenManager.GenerateRefreshToken(userDetails.AccountID, userDetails.AccountType, s.refreshTTL)
 		if err != nil {
 			logger.Error(constants.FailedToGenerateRsh, err, map[string]interface{}{
 				"method": constants.Methods.RefreshToken,
@@ -264,7 +260,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	return nil, errors.New("couldn't refresh token")
 }
 
-func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
+func (s *authService) VerifyAccessToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.AuthClaims, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -278,7 +274,7 @@ func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenReques
 		return nil, fmt.Errorf(constants.AuthAccessRequired)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(input.AccessToken)
+	claims, err := s.tokenManager.VerifyAccessToken(input.AccessToken)
 	if err != nil {
 		logger.Error(constants.AuthTokenVeriFailed, err, map[string]interface{}{
 			"method": constants.Methods.VerifyToken,
@@ -291,12 +287,7 @@ func (s *authService) VerifyToken(ctx context.Context, req *pb.VerifyTokenReques
 		"user":   claims.EmployeeID,
 	})
 
-	return mapper.VerifyTokenResponse(&model.User{
-		AccountID:   claims.AccountID,
-		AccountType: claims.AccountType,
-		Role:        claims.Role,
-		Permissions: claims.Permissions,
-	}, true), nil
+	return mapper.VerifyTokenResponse(claims), nil
 }
 
 func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
@@ -313,7 +304,7 @@ func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Lo
 		return nil, fmt.Errorf(constants.ErrMissingRefreshToken)
 	}
 
-	claims, err := s.tokenManager.VerifyToken(input.RefreshToken)
+	claims, err := s.tokenManager.VerifyAccessToken(input.RefreshToken)
 	if err != nil {
 		logger.Error(constants.AuthRshTokenInvalid, err, map[string]interface{}{
 			"method": constants.Methods.Logout,
@@ -322,7 +313,7 @@ func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Lo
 	}
 
 	// Remove refresh token from Redis
-	err = s.tokenRepo.DeleteToken(ctx, constants.Access_token, claims.AccountID)
+	err = s.tokenRepo.DeleteToken(ctx, constants.Access_token, claims.RegisteredClaims.Subject)
 	if err != nil {
 		logger.Error(constants.ErrTokenDeletionFailed, err, map[string]interface{}{
 			"method": constants.Methods.Logout,
@@ -330,7 +321,7 @@ func (s *authService) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Lo
 		return nil, err
 	}
 
-	err = s.tokenRepo.DeleteToken(ctx, constants.Refresh_token, claims.AccountID)
+	err = s.tokenRepo.DeleteToken(ctx, constants.Refresh_token, claims.RegisteredClaims.Subject)
 	if err != nil {
 		logger.Error(constants.ErrTokenDeletionFailed, err, map[string]interface{}{
 			"method": constants.Methods.Logout,

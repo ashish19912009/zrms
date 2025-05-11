@@ -55,7 +55,7 @@ func (h *GRPCHandler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	return h.authService.RefreshToken(ctx, req)
 }
 
-func (h *GRPCHandler) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
+func (h *GRPCHandler) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.AuthClaims, error) {
 	if req.AccessToken == "" {
 		logger.Error(constants.AuthAccessRequired, nil, map[string]interface{}{
 			"method":        constants.Methods.AccessToken,
@@ -63,7 +63,7 @@ func (h *GRPCHandler) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequ
 		})
 		return nil, status.Error(codes.InvalidArgument, constants.AuthAccessRequired)
 	}
-	return h.authService.VerifyToken(ctx, req)
+	return h.authService.VerifyAccessToken(ctx, req)
 }
 
 func (h *GRPCHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {

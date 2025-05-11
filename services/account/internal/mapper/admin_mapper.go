@@ -55,7 +55,7 @@ func DeleteFranchise_FromProtoToModel(id string, admin_id string) (*model.Delete
 	}, nil
 }
 
-func AddFranchise_ProtoToModel(pbFranchise *pb.FranchiseInput) (*model.Franchise, error) {
+func AddFranchise_ProtoToModel(pbFranchise *pb.FranchiseInput, perm *pb.Permission) (*model.Franchise, *model.Permission, error) {
 	return &model.Franchise{
 		BusinessName:       pbFranchise.BusinessName,
 		LogoURL:            pbFranchise.LogoUrl,
@@ -63,7 +63,7 @@ func AddFranchise_ProtoToModel(pbFranchise *pb.FranchiseInput) (*model.Franchise
 		ThemeSettings:      pbFranchise.ThemeSettings.AsMap(),
 		Status:             pbFranchise.Status,
 		Franchise_Owner_id: pbFranchise.FranchiseOwnerId,
-	}, nil
+	}, &model.Permission{Resource: perm.Resource, Action: perm.Action}, nil
 }
 
 func GetAllFranchises_ProtoToModel(pagination *pb.PaginationRequest, query string) (int32, int32, string, error) {

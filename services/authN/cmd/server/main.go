@@ -144,7 +144,7 @@ func main() {
 	if cfg.Env != "production" {
 		reflection.Register(grpcServer)
 	}
-	log.Printf("Auth service is running on port %s", cfg.Port)
+	log.Printf("✅ AuthN gRPC server is running on port %s", cfg.Port)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

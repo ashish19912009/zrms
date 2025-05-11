@@ -1,2 +1,8 @@
 env: "development"
 port: "50053"
+authz_service:
+  host_authz: "localhost"
+  port_authz: "50052"
+authn_service:
+  host_authn: "localhost"
+  port_authn: "50051"

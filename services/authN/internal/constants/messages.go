@@ -65,6 +65,7 @@ const (
 	FailedToGenerateRsh       = "failed to generate refresh token: %w"
 	AuthRshTokenInvalid       = "invalid refresh token: %w"
 	ErrMissingRefreshToken    = "refresh token is missing in request"
+	ErrTokenExpired           = "refresh token expired"
 	ErrTokenDeletionFailed    = "failed to delete refresh token from in_memory_DB"
 	MsgLogoutSuccess          = "user successfully logged out"
 	ErrInvalidRequest         = "invalid request parameters"

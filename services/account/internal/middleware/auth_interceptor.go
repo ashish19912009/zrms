@@ -4,81 +4,84 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/client"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/ashish19912009/zrms/services/account/internal/logger"
+	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type AuthInterceptor struct {
-	allowedRoles map[string]bool
-	jwtSecret    []byte
 	authz_client client.AuthZClient
 	authn_client client.AuthNClient
 	//	validateToken func(token string) (map[string]interface{}, error)
 }
 
-func NewAuthInterceptor(secret string, roles ...string) *AuthInterceptor {
-	roleMap := make(map[string]bool)
-	for _, role := range roles {
-		roleMap[role] = true
-	}
-	return &AuthInterceptor{allowedRoles: roleMap, jwtSecret: []byte(secret)}
-	//	return &AuthInterceptor{validateToken: validateToken}
+func NewAuthInterceptor(authZ client.AuthZClient, authN client.AuthNClient) *AuthInterceptor {
+	return &AuthInterceptor{authz_client: authZ, authn_client: authN}
 }
 
 func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		role, err := a.extractAndValidateToken(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("unauthorized %w", err)
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		claims, err := a.extractAndValidateToken(ctx)
+		if err != nil || claims == nil {
+			logger.Error("authentication failed", err, map[string]interface{}{
+				"layer":  "middleware",
+				"method": "Unary",
+			})
+			return nil, status.Errorf(codes.Unauthenticated, "authentication failed")
 		}
-		if !a.allowedRoles[role] {
-			return nil, fmt.Errorf("forbidden: role '%s' is not allowed", role)
+		if claims.RegisteredClaims.ExpiresAt.AsTime().Before(time.Now()) {
+			return nil, status.Error(codes.Unauthenticated, "token expired")
 		}
+		if claims.RegisteredClaims.Subject == "" || claims.AccountType == "" {
+			return nil, status.Error(codes.PermissionDenied, "account not verified")
+		}
+		// Add claims to context
+		ctx = context.WithValue(ctx, model.RequestContextKey, &model.RequestContext{
+			Claims: claims,
+		})
 		return handler(ctx, req)
 	}
 }
 
-func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (string, error) {
+func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (*model.AuthClaims, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", fmt.Errorf("missing metadata")
+		return nil, fmt.Errorf("missing metadata")
 	}
 
 	authHeader := md.Get("authorization")
 	if len(authHeader) == 0 {
-		return "", fmt.Errorf("missing authorization header")
+		authHeader = md.Get("Authorization")
+	}
+	if len(authHeader) == 0 {
+		return nil, fmt.Errorf("missing authorization header")
 	}
 
 	parts := strings.Split(authHeader[0], " ")
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return "", fmt.Errorf("invalid authorization header format")
+		return nil, fmt.Errorf("invalid authorization header format")
 	}
 
-	tokenStr := parts[1]
-
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		// verify singing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return a.jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		return "", fmt.Errorf("invalid token: %w", err)
+	tokenStr := model.Token{
+		Token: strings.TrimSpace(parts[1]),
+	}
+	if len(tokenStr.Token) == 0 {
+		return nil, fmt.Errorf("empty token")
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return "", fmt.Errorf("invalid token class")
+	authClaims, err := a.authn_client.VerifyToken(ctx, tokenStr)
+	if err != nil {
+		logger.Error("something went wrong while verifying token", err, nil)
+		return nil, err
 	}
-
-	role, ok := claims["role"].(string)
-	if !ok || role == "" {
-		return "", fmt.Errorf("role not found in token")
-	}
-	return role, nil
+	return authClaims, nil
 }

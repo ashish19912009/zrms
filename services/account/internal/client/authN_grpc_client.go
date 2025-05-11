@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
+	"github.com/ashish19912009/zrms/services/account/internal/mapper"
+	"github.com/ashish19912009/zrms/services/account/internal/model"
 	pb_authn "github.com/ashish19912009/zrms/services/authN/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -14,6 +16,7 @@ import (
 )
 
 type AuthNClient interface {
+	VerifyToken(ctx context.Context, access_token model.Token) (*model.AuthClaims, error)
 	Close() error
 }
 
@@ -23,7 +26,7 @@ type authNClient struct {
 	err    error
 }
 
-func NewAuthServiceClient(host string, port string) (AuthNClient, error) {
+func NewAuthNServiceClient(host string, port string) (AuthNClient, error) {
 	env := os.Getenv("ENV")
 	if host == "" || port == "" {
 		logger.Fatal("host and port must be set", nil, nil)
@@ -55,11 +58,19 @@ func NewAuthServiceClient(host string, port string) (AuthNClient, error) {
 	}, nil
 }
 
-func (authnClient *authNClient) VerifyToken(ctx context.Context, access_token string) {
-	token := &pb_authn.VerifyTokenRequest{
-		AccessToken: access_token,
+func (authnClient *authNClient) VerifyToken(ctx context.Context, access_token model.Token) (*model.AuthClaims, error) {
+	token := mapper.VerifyTokenFromModelToPb(access_token)
+	authClaims, err := authnClient.client.VerifyToken(ctx, token)
+	if err != nil {
+		logger.Error("something went wrong while verifying token on authN services", err, nil)
+		return nil, err
 	}
-	authnClient.client.VerifyToken(ctx, token)
+	aClaims, err := mapper.VerifyTokenFromPbToModel(authClaims)
+	if err != nil {
+		logger.Error("something went wrong while verifying token on authN services", err, nil)
+		return nil, err
+	}
+	return aClaims, nil
 }
 
 func (authnClient *authNClient) Close() error {

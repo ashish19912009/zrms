@@ -9,7 +9,23 @@ type Token struct {
 	Token string `json:"access_token"`
 }
 
-type AuthCalims struct {
+type RequestContext struct {
+	Claims     *AuthClaims
+	Permission *Permission // {Resource, Action}
+}
+
+type Permission struct {
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+}
+
+type contextKey string
+
+const (
+	RequestContextKey contextKey = "requestContext"
+)
+
+type AuthClaims struct {
 	EmployeeID       string            `json:"employee_id" protobuf:"bytes,1,opt,name=employee_id"`
 	FranchiseID      string            `json:"franchise_id" protobuf:"bytes,2,opt,name=franchise_id"`
 	AccountType      string            `json:"account_type" protobuf:"bytes,3,opt,name=account_type"`

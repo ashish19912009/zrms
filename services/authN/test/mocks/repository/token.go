@@ -43,8 +43,8 @@ func (_m *TokenManager) GenerateAccessToken(accountID string, employeeID string,
 }
 
 // GenerateRefreshToken provides a mock function with given fields: accountID, accountType, permissions, duration
-func (_m *TokenManager) GenerateRefreshToken(accountID string, accountType string, permissions []string, duration time.Duration) (string, error) {
-	ret := _m.Called(accountID, accountType, permissions, duration)
+func (_m *TokenManager) GenerateRefreshToken(accountID string, accountType string, duration time.Duration) (string, error) {
+	ret := _m.Called(accountID, accountType, duration)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateRefreshToken")
@@ -52,21 +52,20 @@ func (_m *TokenManager) GenerateRefreshToken(accountID string, accountType strin
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string, []string, time.Duration) (string, error)); ok {
-		return rf(accountID, accountType, permissions, duration)
+	if rf, ok := ret.Get(0).(func(string, string, time.Duration) (string, error)); ok {
+		return rf(accountID, accountType, duration)
 	}
-	if rf, ok := ret.Get(0).(func(string, string, []string, time.Duration) string); ok {
-		r0 = rf(accountID, accountType, permissions, duration)
+	if rf, ok := ret.Get(0).(func(string, string, time.Duration) string); ok {
+		r0 = rf(accountID, accountType, duration)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string, []string, time.Duration) error); ok {
-		r1 = rf(accountID, accountType, permissions, duration)
+	if rf, ok := ret.Get(1).(func(string, string, time.Duration) error); ok {
+		r1 = rf(accountID, accountType, duration)
 	} else {
 		r1 = ret.Error(1)
 	}
-
 	return r0, r1
 }
 
