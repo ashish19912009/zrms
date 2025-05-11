@@ -22,12 +22,12 @@ func ExecuteAndScanRow(ctx context.Context, methodName string, db *sql.DB, query
 	row := db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
-		logger.Fatal(constants.DBQueryFailed, row.Err(), logCtx)
+		logger.Error(constants.DBQueryFailed, row.Err(), logCtx)
 		return row.Err()
 	}
 	if err := row.Scan(dest...); err != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
-		logger.Fatal(constants.FailedToRetrv, row.Err(), logCtx)
+		logger.Error(constants.FailedToRetrv, err, logCtx)
 		return err
 	}
 	return nil
@@ -37,12 +37,12 @@ func ExecuteAndScanRowTx(ctx context.Context, methodName string, tx *sql.Tx, que
 	row := tx.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
-		logger.Fatal(constants.DBQueryFailed, row.Err(), logCtx)
+		logger.Error(constants.DBQueryFailed, row.Err(), logCtx)
 		return row.Err()
 	}
 	if err := row.Scan(dest...); err != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
-		logger.Fatal(constants.FailedToRetrv, err, logCtx)
+		logger.Error(constants.FailedToRetrv, err, logCtx)
 		return err
 	}
 	return nil

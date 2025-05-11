@@ -9,10 +9,12 @@ import (
 func LoginResponse(user *model.User, accessToken, refreshToken string) *pb.LoginResponse {
 	return &pb.LoginResponse{
 		AccountId:    user.AccountID,
+		FranchiseId:  user.FranchiseID,
 		EmployeeId:   user.EmployeeID,
 		AccountType:  user.AccountType,
 		Name:         user.Name,
 		MobileNo:     user.MobileNo,
+		Email:        user.Email,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}

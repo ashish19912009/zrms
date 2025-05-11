@@ -1,15 +1,28 @@
 package model
 
+// "id",
+// "franchise_id",
+// "employee_id",
+// "login_id",
+// "password_hash",
+// "account_type",
+// "name",
+// "mobile_no",
+// "email",
+// "role_id",
+// "status",
+
 type User struct {
-	AccountID   string   `json:"account_id"`
-	FranchiseID string   `json:"franchise_id"`
-	EmployeeID  string   `json:"employee_id"`
-	AccountType string   `json:"account_type"`
-	Name        string   `json:"name"`
-	MobileNo    string   `json:"mobile_no"`
-	Password    string   `json:"password"`
-	Role        []string `json:"roles,omitempty"`
-	Status      string   `json:"status"`
+	AccountID   string `json:"account_id"`
+	FranchiseID string `json:"franchise_id"`
+	EmployeeID  string `json:"employee_id"`
+	AccountType string `json:"account_type"`
+	RoleID      string `json:"role_id"`
+	Name        string `json:"name"`
+	MobileNo    string `json:"mobile_no"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	Status      string `json:"status"`
 }
 
 // type UserAdminPermission struct {

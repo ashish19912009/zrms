@@ -16,6 +16,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/service"
 	"github.com/ashish19912009/zrms/services/account/pb"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -54,12 +55,21 @@ func connectDB() (*sql.DB, error) {
 
 func main() {
 	loadEnv()
+
 	config_yaml_path := fmt.Sprintf("../../config/config.%s.yaml", appEnv)
 	var cfg *config.AppConfig
 	cfg, err := config.LoadConfig(config_yaml_path)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
+	//Initialize logger
+	logger.InitLogger("account-service", zerolog.DebugLevel, "../../log_report/account_service.log")
+	logger.Info("Starting account services", map[string]interface{}{
+		"env": appEnv,
+	})
+
+	// DB Connection
 	db, err := connectDB()
 	if err != nil {
 		log.Fatalf("DB error: %v", err)

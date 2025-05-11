@@ -36,12 +36,13 @@ message Permission {
 message LoginResponse {
     string employee_id   = 1;
     string account_id    = 2;
-    string account_type  = 3;
-    string name          = 4;
-    string mobile_no     = 5;
-    string access_token  = 6;
-    string refresh_token = 7;
-    repeated Permission permissions = 8; // List of permissions
+    string franchise_id  = 3;
+    string account_type  = 4;
+    string name          = 5;
+    string mobile_no     = 6;
+    string email         = 7;
+    string access_token  = 8;
+    string refresh_token = 9;
 }
 
 // Request to refresh token (used by interceptors)

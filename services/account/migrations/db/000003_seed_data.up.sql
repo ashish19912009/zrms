@@ -1,13 +1,13 @@
-INSERT INTO users.team_accounts (
-    account_id,
+INSERT INTO outlet.team_accounts (
+    id,
+	franchise_id,
     mobile_no,
     login_id,
     name,
-    role,
+    account_type,
     employee_id,
     password_hash,
-    account_type,
-    permissions,
+    role_id,
     status,
     created_at,
     updated_at
@@ -15,14 +15,14 @@ INSERT INTO users.team_accounts (
 VALUES
 (
     gen_random_uuid(),
-    '8888888889',
-    'ops.manager_2',
-    'Suresh',
-    'ops_manager',
+	'5e51d8e6-8a8d-4dc7-b86b-16aeef819f0a',
+    '8888388889',
+    'ops.superadmin',
+    'Rena',
+    'super_admin',
     'EMP003',
-    '$2a$12$KbLkDETK6qple93GvvS/q.UdQbxidA5dvqIKZzz.W8f1gxxqdXHka', -- bcrypt hashed password
-    'admin',
-    ARRAY['read', 'write'],
+    '$2a$12$0HNgS3VS2uNgnZorH8Ovqux0m8spDiUXqbBaWK3awh6J1L3XyFR02', -- bcrypt hashed password
+    '638f2359-f061-4ea0-be8a-d73b7ad1ef37',
     'active',
     now(),
     now()

@@ -1,0 +1,7 @@
+{"level":"info","service":"account-service","env":"local","time":"2025-05-11T21:09:25+05:30","message":"Starting account services"}
+{"level":"info","service":"account-service","env":"local","time":"2025-05-11T21:18:21+05:30","message":"Starting account services"}
+{"level":"error","service":"account-service","error":"missing authorization header","layer":"middleware","method":"Unary","time":"2025-05-11T21:18:31+05:30","message":"authentication failed"}
+{"level":"error","service":"account-service","error":"missing authorization header","layer":"middleware","method":"Unary","time":"2025-05-11T23:49:47+05:30","message":"authentication failed"}
+{"level":"error","service":"account-service","error":"rpc error: code = Unimplemented desc = method VerifyToken not implemented","time":"2025-05-11T23:50:45+05:30","message":"something went wrong while verifying token on authN services"}
+{"level":"error","service":"account-service","error":"rpc error: code = Unimplemented desc = method VerifyToken not implemented","time":"2025-05-11T23:50:45+05:30","message":"something went wrong while verifying token"}
+{"level":"error","service":"account-service","error":"rpc error: code = Unimplemented desc = method VerifyToken not implemented","layer":"middleware","method":"Unary","time":"2025-05-11T23:50:45+05:30","message":"authentication failed"}

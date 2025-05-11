@@ -6,7 +6,7 @@ toolchain go1.23.9
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/ashish19912009/zrms/services/authZ v0.0.0-20250507135720-b0e83a314922
+	github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/golang-jwt/jwt/v5 v5.2.2

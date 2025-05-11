@@ -5,8 +5,8 @@ github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
-github.com/ashish19912009/zrms/services/authZ v0.0.0-20250507135720-b0e83a314922 h1:bPjkM8fdq0UUrjpflCjZmTtesAuM2tnmy4QPE/gOJTc=
-github.com/ashish19912009/zrms/services/authZ v0.0.0-20250507135720-b0e83a314922/go.mod h1:YUcqYaIwtT3aopsemnjFl+t8h0EevOl3vlBxTKq69yY=
+github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92 h1:tAKRv6TS/Snjs+AaITxCW3apKmzwuE2CC90OvrSWL48=
+github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92/go.mod h1:YUcqYaIwtT3aopsemnjFl+t8h0EevOl3vlBxTKq69yY=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf h1:TqhNAT4zKbTdLa62d2HDBFdvgSbIGB3eJE8HqhgiL9I=
