@@ -18,13 +18,14 @@ CREATE TABLE IF NOT EXISTS outlet.owners (
 CREATE TABLE IF NOT EXISTS outlet.franchises (
     id UUID PRIMARY KEY,
     business_name TEXT NOT NULL,
-    subdomain TEXT UNIQUE NOT NULL,
+    sub_domain TEXT UNIQUE NOT NULL,
     logo_url TEXT,
     theme_settings JSONB DEFAULT '{}'::jsonb,
     status TEXT DEFAULT 'active', -- 'active', 'inactive', 'suspended'
     franchise_owner_id UUID NOT NULL, -- person who opened the franchise
     created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
 );
 
 -- New pivot table to link owners to franchises (many-to-many)

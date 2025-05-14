@@ -21,7 +21,7 @@ VALUES
     'Rena',
     'super_admin',
     'EMP003',
-    '$2a$12$0HNgS3VS2uNgnZorH8Ovqux0m8spDiUXqbBaWK3awh6J1L3XyFR02', -- bcrypt hashed password
+    '$2a$12$0HNgS3VS2uNgnZorH8Ovqux0m8spDiUXqbBaWK3awh6J1L3XyFR02', --su@123 bcrypt hashed password
     '638f2359-f061-4ea0-be8a-d73b7ad1ef37',
     'active',
     now(),

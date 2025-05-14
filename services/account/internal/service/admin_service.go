@@ -9,6 +9,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/repository"
 	"github.com/ashish19912009/zrms/services/account/internal/validations"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -96,6 +97,12 @@ func (ad *adminService) UpdateNewOwner(ctx context.Context, id string, owner *mo
 }
 
 func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Franchise, reqPerm *model.Permission) (*model.AddResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	reqCtxValue := ctx.Value(model.RequestContextKey)
 	if reqCtxValue == nil {
 		return nil, status.Error(codes.Internal, "missing request context or required params")
@@ -115,11 +122,12 @@ func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Fr
 	if err != nil {
 		return nil, err
 	}
-
 	if franchiseExists != nil && franchiseExists.BusinessName == franchise.BusinessName && franchiseExists.Franchise_Owner_id == franchise.Franchise_Owner_id {
 		return nil, status.Error(codes.PermissionDenied, constants.BusinessAlreadyExist)
 	}
 	var newFranchise *model.AddResponse
+	uuid := uuid.New().String()
+	franchise.ID = uuid
 	newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
 	if err != nil {
 		return nil, err

@@ -13,25 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// func insertUser(t *testing.T, mock sqlmock.Sqlmock, user models.User) {
-// 	t.Helper()
-
-// 	mock.ExpectExec("INSERT INTO accounts").
-// 		WithArgs(
-// 			user.AccountID,
-// 			user.EmployeeID,
-// 			user.AccountType,
-// 			user.Name,
-// 			user.MobileNo,
-// 			user.Password,
-// 			user.Role,
-// 			user.Permissions, // nil or []string
-// 			user.Status,
-// 			nil, // deleted_at
-// 		).
-// 		WillReturnResult(sqlmock.NewResult(1, 1))
-// }
-
 func TestGetUser(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
+	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/pb"
 )
@@ -56,11 +58,15 @@ func DeleteFranchise_FromProtoToModel(id string, admin_id string) (*model.Delete
 }
 
 func AddFranchise_ProtoToModel(pbFranchise *pb.FranchiseInput, perm *pb.Permission) (*model.Franchise, *model.Permission, error) {
+	jsonBytes, err := dbutils.ConvertStringMapToJson(pbFranchise.ThemeSettings.AsMap())
+	if err != nil {
+		logger.Error("something went wrong while converting map string to JSON", err, nil)
+	}
 	return &model.Franchise{
 		BusinessName:       pbFranchise.BusinessName,
 		LogoURL:            pbFranchise.LogoUrl,
 		SubDomain:          pbFranchise.Subdomain,
-		ThemeSettings:      pbFranchise.ThemeSettings.AsMap(),
+		ThemeSettings:      string(jsonBytes),
 		Status:             pbFranchise.Status,
 		Franchise_Owner_id: pbFranchise.FranchiseOwnerId,
 	}, &model.Permission{Resource: perm.Resource, Action: perm.Action}, nil

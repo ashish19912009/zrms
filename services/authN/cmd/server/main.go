@@ -15,7 +15,7 @@ import (
 	"github.com/ashish19912009/zrms/services/authN/internal/service"
 	"github.com/ashish19912009/zrms/services/authN/internal/store"
 	"github.com/ashish19912009/zrms/services/authN/internal/token"
-	"github.com/ashish19912009/zrms/services/authN/pb"
+	pb "github.com/ashish19912009/zrms/services/authN/pb"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
@@ -117,6 +117,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create JWT manager: %v", err)
 	}
+
+	// register grpc server
+	grpcServer := grpc.NewServer()
+
 	var authService service.AuthService
 	accessTTL := os.Getenv("ACCESS_TOKEN_TTL")
 	refreshTTL := os.Getenv("REFRESH_TOKEN_TTL")
@@ -137,8 +141,6 @@ func main() {
 		log.Fatalf("Failed to initialize gRPC handler: %v", err)
 	}
 
-	// register grpc server
-	grpcServer := grpc.NewServer()
 	pb.RegisterAuthServiceServer(grpcServer, grpcHandler)
 
 	if cfg.Env != "production" {

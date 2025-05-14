@@ -2,8 +2,12 @@ github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7Oputl
 github.com/DATA-DOG/go-sqlmock v1.5.2/go.mod h1:88MAG/4G7SMwSE3CeA0ZKzrT5CiOU3OJ+JlNzwDqpNU=
 github.com/ashish19912009/zrms/services/authN v0.0.0-20250510101834-98aa617e3b92 h1:Zm0NlZIGQ0uY1apeoaoeRL8+CLRrct+HK+VrMicULfw=
 github.com/ashish19912009/zrms/services/authN v0.0.0-20250510101834-98aa617e3b92/go.mod h1:gafz35Co1/JchN7p0P8F3c5LPPsniApkqVt3Cs/o9pI=
+github.com/ashish19912009/zrms/services/authN v0.0.0-20250511153111-ca9a1a53ed05 h1:Uojj519wdF9CbBQdKKWNrP7/k0L8iQ1HokhPKjqWyrs=
+github.com/ashish19912009/zrms/services/authN v0.0.0-20250511153111-ca9a1a53ed05/go.mod h1:gafz35Co1/JchN7p0P8F3c5LPPsniApkqVt3Cs/o9pI=
 github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92 h1:tAKRv6TS/Snjs+AaITxCW3apKmzwuE2CC90OvrSWL48=
 github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92/go.mod h1:YUcqYaIwtT3aopsemnjFl+t8h0EevOl3vlBxTKq69yY=
+github.com/ashish19912009/zrms/services/authZ v0.0.0-20250511183150-4c9b34ef4612 h1:PFkaGq/U5ZauOerc8k8Db24LqwPHeiQLUiT4y/YVTwg=
+github.com/ashish19912009/zrms/services/authZ v0.0.0-20250511183150-4c9b34ef4612/go.mod h1:YUcqYaIwtT3aopsemnjFl+t8h0EevOl3vlBxTKq69yY=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

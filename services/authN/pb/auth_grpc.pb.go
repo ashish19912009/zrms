@@ -28,9 +28,6 @@ const (
 // AuthServiceClient is the client API for AuthService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-//	export PATH=$(go env GOPATH)/bin:$PATH
-//	protoc --go_out=../ --go-grpc_out=../ auth.proto
 type AuthServiceClient interface {
 	// Login RPC - used by clients (admins, partners, etc)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
@@ -93,9 +90,6 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
-//
-//	export PATH=$(go env GOPATH)/bin:$PATH
-//	protoc --go_out=../ --go-grpc_out=../ auth.proto
 type AuthServiceServer interface {
 	// Login RPC - used by clients (admins, partners, etc)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)

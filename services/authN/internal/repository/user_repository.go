@@ -114,18 +114,6 @@ func (r *userRepository) GetFranchiseRolePermissions(ctx context.Context, franch
 		return nil, err
 	}
 
-	// 	SELECT
-	//     p.resource,
-	//     p.action
-	// FROM
-	//     outlet.roles r
-	// JOIN
-	//     outlet.role_permissions rp ON r.id = rp.role_id
-	// JOIN
-	//     outlet.permissions p ON rp.permission_id = p.id
-	// WHERE
-	//     r.franchise_id = '22222222-2222-2222-2222-222222222222';
-
 	// Define columns with alias prefixes
 	columns := []string{
 		"p.resource AS resource",
