@@ -27,3 +27,57 @@ var DB = struct {
 	Table_Document_Types:   "document_types",
 	Table_Role_Permissions: "role_permissions",
 }
+
+var T_Fran = struct {
+	UUID             string
+	BusinessName     string
+	LogoUrl          string
+	Subdomain        string
+	ThemeSettings    string
+	Status           string
+	CreatedAt        string
+	UpdatedAt        string
+	DeletedAt        string
+	FranchiseOwnerID string
+}{
+	UUID:             "id",
+	BusinessName:     "business_name",
+	LogoUrl:          "logo_url",
+	Subdomain:        "sub_domain",
+	ThemeSettings:    "theme_settings",
+	Status:           "status",
+	CreatedAt:        "created_at",
+	UpdatedAt:        "updated_at",
+	DeletedAt:        "deleted_at",
+	FranchiseOwnerID: "franchise_owner_id",
+}
+
+var T_Onr = struct {
+	UUID       string
+	Name       string
+	Gender     string
+	DOB        string
+	MobileNo   string
+	Email      string
+	Address    string
+	AadharNo   string
+	IsVerified string
+	Status     string
+	CreatedAt  string
+	UpdatedAt  string
+	DeletedAt  string
+}{
+	UUID:       "id",
+	Name:       "name",
+	Gender:     "gender",
+	DOB:        "dob",
+	MobileNo:   "mobile_no",
+	Email:      "email",
+	Address:    "address",
+	AadharNo:   "aadhar_no",
+	IsVerified: "is_verified",
+	Status:     "status",
+	CreatedAt:  "created_at",
+	UpdatedAt:  "updated_at",
+	DeletedAt:  "deleted_at",
+}

@@ -121,6 +121,7 @@ type FranchiseAddressResponse struct {
 }
 
 type FranchiseOwner struct {
+	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Gender     string `json:"gender"`
 	Dob        string `json:"dob"`

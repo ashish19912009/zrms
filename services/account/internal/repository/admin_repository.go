@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
@@ -21,26 +20,12 @@ mockery --name=Repository --dir=services/account/internal/repository --output=se
 
 var schema = constants.DB.Schema_Outlet
 
-const (
-	uuid               = "id"
-	franchise_id       = "franchise_id"
-	business_name      = "business_name"
-	logo_url           = "logo_url"
-	subdomain          = "sub_domain"
-	theme_settings     = "theme_settings"
-	status             = "status"
-	created_at         = "created_at"
-	updated_at         = "updated_at"
-	deleted_at         = "deleted_at"
-	franchise_owner_id = "franchise_owner_id"
-)
-
 type AdminRepository interface {
 	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error)
 	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error)
 
 	CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error)
-	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error)
+	UpdateFranchise(ctx context.Context, franchise *model.Franchise) (*model.UpdateResponse, error)
 	UpdateFranchiseStatus(ctx context.Context, id string, status string) (*model.UpdateResponse, error)
 	DeleteFranchise(ctx context.Context, id string) (*model.DeletedResponse, error)
 
@@ -67,22 +52,21 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 	}
 
 	columns := []string{
-		"id",
-		"name",
-		"gender",
-		"dob",
-		"mobile_no",
-		"email",
-		"address",
-		"aadhar_no",
-		"is_verified",
-		"status",
-		"created_at",
+		constants.T_Onr.UUID,
+		constants.T_Onr.Name,
+		constants.T_Onr.Gender,
+		constants.T_Onr.DOB,
+		constants.T_Onr.MobileNo,
+		constants.T_Onr.Email,
+		constants.T_Onr.Address,
+		constants.T_Onr.AadharNo,
+		constants.T_Onr.IsVerified,
+		constants.T_Onr.Status,
 	}
 	//sort.Strings(columns)
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: columns,
+		Returning: []string{constants.T_Onr.UUID, constants.T_Onr.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
@@ -90,7 +74,7 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		}{
 			Schemas: []string{schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Onr.CreatedAt),
 		},
 	}
 
@@ -111,7 +95,6 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		return nil, err
 	}
 
-	// return account, nil
 	var repsonse *model.AddResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
 		&repsonse,
@@ -120,7 +103,6 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		return nil, err
 	}
 	return repsonse, nil
-	//return owner.ToResponse(createdID, created_at), nil
 }
 
 func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error) {
@@ -131,32 +113,38 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
+
 	// Fields to update
-	data := map[string]any{
-		"id":          id,
-		"name":        owner.Name,
-		"gender":      owner.Gender,
-		"dob":         owner.Dob,
-		"mobile_no":   owner.MobileNo,
-		"email":       owner.Email,
-		"address":     owner.Address,
-		"aadhar_no":   owner.AadharNo,
-		"is_verified": owner.IsVerified,
-		"status":      owner.Status,
+	columns := []string{
+		constants.T_Onr.UUID,
+		constants.T_Onr.Name,
+		constants.T_Onr.Gender,
+		constants.T_Onr.DOB,
+		constants.T_Onr.MobileNo,
+		constants.T_Onr.Email,
+		constants.T_Onr.Address,
+		constants.T_Onr.AadharNo,
+		constants.T_Onr.IsVerified,
+		constants.T_Onr.Status,
 	}
 
-	columns := make([]string, 0, len(data))
+	data, err := dbutils.MapStructFieldsByTag(columns, owner, "json")
+	if err != nil {
+		logger.Fatal("something went wrong while mapping data to field", err, nil)
+	}
+
+	columns = make([]string, 0, len(data))
 	for col := range data {
 		columns = append(columns, col)
 	}
-	columns = append(columns, "updated_at")
-	sort.Strings(columns)
+
 	conditions := map[string]any{
-		"id": id,
+		constants.T_Onr.UUID: id,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
@@ -164,15 +152,19 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 		}{
 			Schemas: []string{schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Onr.UpdatedAt),
 		},
-		Returning: columns,
 	}
 
 	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
+
+	// values, err := dbutils.StructToValuesByTag(owner, columns, "json")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	var updated model.UpdateResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
@@ -194,10 +186,18 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
-	columns := []string{uuid, logo_url, theme_settings, subdomain, status, business_name, franchise_owner_id}
+	columns := []string{
+		constants.T_Fran.UUID,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.Status,
+		constants.T_Fran.FranchiseOwnerID,
+	}
 	// Insert into franchise table
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{uuid, created_at},
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
@@ -205,16 +205,16 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 		}{
 			Schemas: []string{schema},
 			Tables:  []string{table},
-			Columns: append(columns, created_at),
+			Columns: append(columns, constants.T_Fran.CreatedAt),
 		},
 	}
 
-	values, err := dbutils.StructToValuesByTag(fInput, columns, "json")
+	query, err := dbutils.BuildInsertQuery(method, schema, table, columns, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	query, err := dbutils.BuildInsertQuery(method, schema, table, columns, opts)
+	values, err := dbutils.StructToValuesByTag(fInput, columns, "json")
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 	return &franchise, nil
 }
 
-func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error) {
+func (ar *admin_repository) UpdateFranchise(ctx context.Context, franchise *model.Franchise) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchise
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -239,21 +239,33 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 	}
 
 	columns := []string{
-		business_name, subdomain, logo_url, theme_settings, status,
+		constants.T_Fran.UUID,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.Status,
+		constants.T_Fran.FranchiseOwnerID,
 	}
 
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: append(columns, "id", "updated_at"),
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 	}
 	opts.Whilelist.Schemas = []string{schema}
 	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, "id", "updated_at")
+	opts.Whilelist.Columns = append(columns, constants.T_Fran.UpdatedAt)
+
+	// Define the condition map for WHERE clause
+	conditions := map[string]any{
+		constants.T_Fran.UUID: franchise.ID,
+	}
 
 	query, args, err := dbutils.BuildUpdateQuery(
 		method,
 		schema,
 		table,
-		append(columns, "id"), map[string]any{"id": id},
+		columns,
+		conditions,
 		opts,
 	)
 	if err != nil {
