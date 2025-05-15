@@ -30,7 +30,7 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
-
+		fmt.Printf("rpc name: %s", info.FullMethod)
 		claims, err := a.extractAndValidateToken(ctx)
 		if err != nil || claims == nil {
 			logger.Error("authentication failed", err, map[string]interface{}{
@@ -39,13 +39,20 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 			})
 			return nil, status.Errorf(codes.Unauthenticated, "authentication failed")
 		}
-		rPerm, err := a.extractAndValidatePermission(ctx)
+		internalCall, rPerm, err := a.extractAndValidatePermission(ctx)
 		if err != nil || rPerm == nil {
 			logger.Error("no permission request", err, map[string]interface{}{
 				"layer":  "middleware",
 				"method": "Unary",
 			})
 			return nil, status.Errorf(codes.PermissionDenied, "no permission requested")
+		}
+		ctx = context.WithValue(ctx, model.RequestContextKey, &model.RequestContext{
+			Claims: claims,
+		})
+		// bypass Authz if service internal call
+		if internalCall != nil && *internalCall {
+			return handler(ctx, req)
 		}
 		isAuthorized, err := a.authz_client.CheckAccess(ctx, claims.RegisteredClaims.Subject, claims.FranchiseID, rPerm.Resource, rPerm.Action)
 		if err != nil {
@@ -60,10 +67,6 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 		if claims.RegisteredClaims.Subject == "" || claims.AccountType == "" {
 			return nil, status.Error(codes.PermissionDenied, "account not verified")
 		}
-
-		ctx = context.WithValue(ctx, model.RequestContextKey, &model.RequestContext{
-			Claims: claims,
-		})
 		return handler(ctx, req)
 	}
 }
@@ -100,23 +103,28 @@ func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (*model.A
 	return authClaims, nil
 }
 
-func (a *AuthInterceptor) extractAndValidatePermission(ctx context.Context) (*model.Permission, error) {
+func (a *AuthInterceptor) extractAndValidatePermission(ctx context.Context) (*bool, *model.Permission, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("missing metadata in context")
+		return nil, nil, fmt.Errorf("missing metadata in context")
 	}
 
 	resource := helper.GetMetadataValue(md, "resource", "Resource")
 	if resource == "" {
-		return nil, fmt.Errorf("missing resource in metadata")
+		return nil, nil, fmt.Errorf("missing resource in metadata")
 	}
 
 	action := helper.GetMetadataValue(md, "action", "Action")
 	if action == "" {
-		return nil, fmt.Errorf("missing action in metadata")
+		return nil, nil, fmt.Errorf("missing action in metadata")
 	}
-
-	return &model.Permission{
+	isInternal := helper.GetMetadataValue(md, "trusted", "Trusted")
+	if isInternal != "" && isInternal == "true" {
+		b := true
+		return &b, nil, nil
+	}
+	b := false
+	return &b, &model.Permission{
 		Resource: resource,
 		Action:   action,
 	}, nil

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/ashish19912009/zrms/services/account/internal/client"
@@ -11,7 +12,7 @@ import (
 )
 
 /*
-Responsibilities of AccountService:
+Responsibilities of service:
 Validate input data (e.g., check if mobileNo is valid before inserting).
 
 Interact with Repository to fetch/update accounts.
@@ -68,17 +69,10 @@ func NewAccountService(repo repository.Repository, client client.AuthZClient) Ac
 }
 
 func (aS *accountService) GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error) {
-	if err := authorize(ctx, "get", "franchiseByID"); err != nil {
-		return nil, err
-	}
-	//aS.client.CheckAccess(ctx,)
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
 	}
-
-	var franchise *model.FranchiseResponse
 	franchise, err := aS.repo.GetFranchiseByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -87,11 +81,6 @@ func (aS *accountService) GetFranchiseByID(ctx context.Context, id string) (*mod
 }
 
 func (aS *accountService) GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error) {
-	//if res, err := client
-	if err := authorize(ctx, "get", "franchiseByID"); err != nil {
-		return nil, err
-	}
-
 	if err := validations.ValidateLength(b_name, 5, 100); err != nil {
 		return nil, err
 	}
@@ -104,10 +93,6 @@ func (aS *accountService) GetFranchiseByBusinessName(ctx context.Context, b_name
 }
 
 func (aS *accountService) GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -120,15 +105,10 @@ func (aS *accountService) GetFranchiseOwnerByID(ctx context.Context, id string) 
 }
 
 func (aS *accountService) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharID string) (bool, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return false, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateAadhaarNumber(aadharID); err != nil {
 		return false, err
 	}
-
 	f_owner, err := aS.repo.CheckIfOwnerExistsByAadharID(ctx, aadharID)
 	if err != nil {
 		return false, err
@@ -140,10 +120,6 @@ func (aS *accountService) CheckIfOwnerExistsByAadharID(ctx context.Context, aadh
 }
 
 func (aS *accountService) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateFranchiseAccounts(account); err != nil {
 		return nil, err
@@ -156,10 +132,6 @@ func (aS *accountService) CreateFranchiseAccount(ctx context.Context, account *m
 }
 
 func (aS *accountService) UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -174,10 +146,6 @@ func (aS *accountService) UpdateFranchiseAccount(ctx context.Context, id string,
 	return f_owner, nil
 }
 func (aS *accountService) GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -190,15 +158,16 @@ func (aS *accountService) GetFranchiseAccountByID(ctx context.Context, id string
 	return f_account, nil
 }
 func (aS *accountService) GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
-	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
 	}
-
+	franchiseExist, err := aS.repo.GetFranchiseByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if franchiseExist == nil {
+		return nil, errors.New("Frachise not found")
+	}
 	f_accounts, err := aS.repo.GetAllFranchiseAccounts(ctx, id)
 	if err != nil {
 		return nil, err
@@ -207,12 +176,16 @@ func (aS *accountService) GetAllFranchiseAccounts(ctx context.Context, id string
 }
 
 func (aS *accountService) AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateFranchiseDocument(doc); err != nil {
 		return nil, err
+	}
+	franchiseExist, err := aS.repo.GetFranchiseByID(ctx, doc.FranchiseID)
+	if err != nil {
+		return nil, err
+	}
+	if franchiseExist == nil {
+		return nil, errors.New("Frachise not found")
 	}
 	f_doc, err := aS.repo.AddFranchiseDocument(ctx, doc)
 	if err != nil {
@@ -222,9 +195,6 @@ func (aS *accountService) AddFranchiseDocument(ctx context.Context, doc *model.F
 }
 
 func (aS *accountService) UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -240,10 +210,6 @@ func (aS *accountService) UpdateFranchiseDocument(ctx context.Context, id string
 }
 
 func (aS *accountService) GetAllFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponseComplete, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -257,9 +223,6 @@ func (aS *accountService) GetAllFranchiseDocuments(ctx context.Context, id strin
 }
 
 func (aS *accountService) AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.AddResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(addr.FranchiseID); err != nil {
 		return nil, err
@@ -298,9 +261,6 @@ func (aS *accountService) AddFranchiseAddress(ctx context.Context, addr *model.F
 	return f_addr, nil
 }
 func (aS *accountService) UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -342,10 +302,6 @@ func (aS *accountService) UpdateFranchiseAddress(ctx context.Context, id string,
 	return f_addr, nil
 }
 func (aS *accountService) GetFranchiseAddressByID(ctx context.Context, id string) (*model.FranchiseAddressResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -359,9 +315,6 @@ func (aS *accountService) GetFranchiseAddressByID(ctx context.Context, id string
 }
 
 func (aS *accountService) AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.AddResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(role.FranchiseID); err != nil {
 		return nil, err
@@ -380,9 +333,6 @@ func (aS *accountService) AddFranchiseRole(ctx context.Context, role *model.Fran
 	return f_role, nil
 }
 func (aS *accountService) UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -405,10 +355,6 @@ func (aS *accountService) UpdateFranchiseRole(ctx context.Context, id string, ro
 
 }
 func (aS *accountService) GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -422,9 +368,6 @@ func (aS *accountService) GetAllFranchiseRoles(ctx context.Context, id string) (
 }
 
 func (aS *accountService) AddPermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(pRole.RoleID); err != nil {
 		return nil, err
@@ -440,9 +383,6 @@ func (aS *accountService) AddPermissionsToRole(ctx context.Context, pRole *model
 	return p_role, nil
 }
 func (aS *accountService) UpdatePermissionsToRole(ctx context.Context, id string, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -461,10 +401,6 @@ func (aS *accountService) UpdatePermissionsToRole(ctx context.Context, id string
 	return p_role, nil
 }
 func (aS *accountService) GetAllPermissionsToRole(ctx context.Context, id string) ([]model.RoleToPermissionsComplete, error) {
-	if err := authorize(ctx, "get", "franchiseOwnerByID"); err != nil {
-		return nil, err
-	}
-
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err

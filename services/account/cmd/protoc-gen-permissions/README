@@ -1,0 +1,8 @@
+move pkg/permission to route folder of micro service
+
+go build -o bin/protoc-gen-permissions ./cmd/protoc-gen-permissions
+
+move it to bin folder -> mv /Users/charuhashirena/Documents/Projects/zrms/services/account/bin/protoc-gen-permissions /usr/local/bin/
+
+run proto command -> protoc  --go_out=./ --permissions_out=./ proto/account.proto  
+

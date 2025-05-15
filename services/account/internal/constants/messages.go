@@ -162,7 +162,7 @@ const (
 	UnauthorizedCloumn          = "unauthorized column: %s"
 	UnauthorizedConditionColumn = "unauthorized condition column: %s"
 	UnauthorizedReturningColumn = "unauthorized returning column: %s"
-	UnauthorizedJoinTable       = "unauthorized join table"
+	UnauthorizedJoinTable       = "unauthorized join table: %s"
 	FailedToBeginTransaction    = "failed to begin transaction: %w"
 	BusinessAlreadyExist        = "business registered with same name for the same franchise owner"
 	FranchiseOwnerExist         = "a person is already registered with the same aadhar no"
