@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
+	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/pb"
 )
@@ -55,15 +57,37 @@ func DeleteFranchise_FromProtoToModel(id string, admin_id string) (*model.Delete
 	}, nil
 }
 
-func AddFranchise_ProtoToModel(pbFranchise *pb.FranchiseInput, perm *pb.Permission) (*model.Franchise, *model.Permission, error) {
+func AddFranchise_ProtoToModel(pbFranchise *pb.AddFranchiseRequest) (*model.Franchise, error) {
+	frach := pbFranchise.GetFranchiseDetails()
+	jsonBytes, err := dbutils.ConvertStringMapToJson(frach.ThemeSettings.AsMap())
+	if err != nil {
+		logger.Error("something went wrong while converting map string to JSON", err, nil)
+	}
 	return &model.Franchise{
-		BusinessName:       pbFranchise.BusinessName,
-		LogoURL:            pbFranchise.LogoUrl,
-		SubDomain:          pbFranchise.Subdomain,
-		ThemeSettings:      pbFranchise.ThemeSettings.AsMap(),
-		Status:             pbFranchise.Status,
-		Franchise_Owner_id: pbFranchise.FranchiseOwnerId,
-	}, &model.Permission{Resource: perm.Resource, Action: perm.Action}, nil
+		BusinessName:       frach.BusinessName,
+		LogoURL:            frach.LogoUrl,
+		SubDomain:          frach.Subdomain,
+		ThemeSettings:      string(jsonBytes),
+		Status:             frach.Status,
+		Franchise_Owner_id: frach.FranchiseOwnerId,
+	}, nil
+}
+
+func UpdateFranchise_ProtoToModel(pbFranchise *pb.UpdateFranchiseRequest) (*model.Franchise, error) {
+	frach := pbFranchise.GetFranchiseDetails()
+	jsonBytes, err := dbutils.ConvertStringMapToJson(frach.ThemeSettings.AsMap())
+	if err != nil {
+		logger.Error("something went wrong while converting map string to JSON", err, nil)
+	}
+	return &model.Franchise{
+		ID:                 pbFranchise.Id,
+		BusinessName:       frach.BusinessName,
+		LogoURL:            frach.LogoUrl,
+		SubDomain:          frach.Subdomain,
+		ThemeSettings:      string(jsonBytes),
+		Status:             frach.Status,
+		Franchise_Owner_id: frach.FranchiseOwnerId,
+	}, nil
 }
 
 func GetAllFranchises_ProtoToModel(pagination *pb.PaginationRequest, query string) (int32, int32, string, error) {
@@ -99,9 +123,16 @@ func GetAllFranchises_ModelToProto(page, limit int32, allFranchise []model.Franc
 }
 
 func Add_ModelToProto(franchise *model.AddResponse) *pb.AddResponse {
+	if franchise == nil {
+		return nil
+	}
+	var createdAt string
+	if !franchise.CreatedAt.IsZero() {
+		createdAt = franchise.CreatedAt.Format(time.RFC3339)
+	}
 	return &pb.AddResponse{
 		Id:        franchise.ID,
-		CreatedAt: franchise.CreatedAt.Format(time.RFC3339),
+		CreatedAt: createdAt,
 	}
 }
 

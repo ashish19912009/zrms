@@ -6,7 +6,7 @@ import (
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 	"github.com/ashish19912009/zrms/services/authN/internal/service"
-	"github.com/ashish19912009/zrms/services/authN/pb"
+	pb "github.com/ashish19912009/zrms/services/authN/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -55,8 +55,8 @@ func (h *GRPCHandler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 	return h.authService.RefreshToken(ctx, req)
 }
 
-func (h *GRPCHandler) ValidateToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.AuthClaims, error) {
-	if req.AccessToken == "" {
+func (h *GRPCHandler) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.AuthClaims, error) {
+	if req.GetAccessToken() == "" {
 		logger.Error(constants.AuthAccessRequired, nil, map[string]interface{}{
 			"method":        constants.Methods.AccessToken,
 			"refresh_token": req.AccessToken,

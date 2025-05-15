@@ -3,10 +3,10 @@ package handler
 import (
 	"context"
 
+	"github.com/ashish19912009/zrms/services/account/internal/client"
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/mapper"
-	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/internal/service"
 	"github.com/ashish19912009/zrms/services/account/internal/validations"
 	"github.com/ashish19912009/zrms/services/account/pb"
@@ -23,9 +23,12 @@ type GRPCHandler struct {
 	pb.UnimplementedAccountServiceServer
 	accountService service.AccountService
 	adminService   service.AdminService
+	client         client.AuthZClient
 }
 
-func NewGRPCHandler(accountService service.AccountService, adminService service.AdminService) *GRPCHandler {
+func NewGRPCHandler(
+	accountService service.AccountService,
+	adminService service.AdminService) *GRPCHandler {
 	return &GRPCHandler{
 		accountService: accountService,
 		adminService:   adminService,
@@ -34,15 +37,6 @@ func NewGRPCHandler(accountService service.AccountService, adminService service.
 
 func (h *GRPCHandler) CreateNewOwner(ctx context.Context, req *pb.AddFranchiseOwnerRequest) (*pb.AddResponse, error) {
 	var method = constants.Methods.CreateNewOwner
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Error(codes.InvalidArgument, constants.MissingPermission)
-	}
-	perm := &model.Permission{
-		Resource: req.Permission.Resource,
-		Action:   req.Permission.Action,
-	}
 	owner, err := mapper.AddFranchiseOwner_ProtoToModel(req.GetOwner())
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
@@ -57,7 +51,7 @@ func (h *GRPCHandler) CreateNewOwner(ctx context.Context, req *pb.AddFranchiseOw
 	if err := validations.ValidateFranchiseOwner(owner); err != nil {
 		return nil, err
 	}
-	createdOwner, err := h.adminService.CreateNewOwner(ctx, owner, perm)
+	createdOwner, err := h.adminService.CreateNewOwner(ctx, owner)
 	if err != nil {
 		eR := status.Errorf(codes.Internal, constants.FailedToCreateOwner, err)
 		errMsg := constants.SomethinWentWrongOnNew + `new owner`
@@ -72,15 +66,6 @@ func (h *GRPCHandler) CreateNewOwner(ctx context.Context, req *pb.AddFranchiseOw
 
 func (h *GRPCHandler) UpdateNewOwner(ctx context.Context, id string, req *pb.AddFranchiseOwnerRequest) (*pb.UpdateResponse, error) {
 	var method = constants.Methods.UpdateOwner
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	perm := &model.Permission{
-		Resource: req.Permission.Resource,
-		Action:   req.Permission.Action,
-	}
 	owner, err := mapper.AddFranchiseOwner_ProtoToModel(req.GetOwner())
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
@@ -106,7 +91,7 @@ func (h *GRPCHandler) UpdateNewOwner(ctx context.Context, id string, req *pb.Add
 		))
 		return nil, err
 	}
-	updateOwner, err := h.adminService.UpdateNewOwner(ctx, id, owner, perm)
+	updateOwner, err := h.adminService.UpdateOwner(ctx, owner)
 	if err != nil {
 		eR := status.Errorf(codes.Internal, constants.FailedToCreateOwner, err)
 		errMsg := constants.SomethinWentWrongOnUpdate + `existing owner`
@@ -120,14 +105,7 @@ func (h *GRPCHandler) UpdateNewOwner(ctx context.Context, id string, req *pb.Add
 
 func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseRequest) (*pb.AddResponse, error) {
 	var method = constants.Methods.CreateFranchise
-	// Convert proto to internal model
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Resource)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	franchise, perm, err := mapper.AddFranchise_ProtoToModel(req.GetFranchiseDetails(), req.Permission)
-	// reqPerm != nil || reqPerm.Resource == "" || reqPerm.Action == ""
+	franchise, err := mapper.AddFranchise_ProtoToModel(req)
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
 		err := constants.MappingFromProtoToModel
@@ -145,7 +123,7 @@ func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseR
 		return nil, err
 	}
 
-	createdFranchise, err := h.adminService.CreateFranchise(ctx, franchise, perm)
+	createdFranchise, err := h.adminService.CreateFranchise(ctx, franchise)
 	if err != nil {
 		eR := status.Errorf(codes.Internal, constants.FailedToCreateFranchsie, err)
 		errMsg := constants.SomethinWentWrongOnNew + `new owner`
@@ -160,13 +138,7 @@ func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseR
 
 func (h *GRPCHandler) UpdateFranchise(ctx context.Context, req *pb.UpdateFranchiseRequest) (*pb.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchise
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	// Convert proto to internal model
-	franchise, perm, err := mapper.AddFranchise_ProtoToModel(req.GetFranchiseDetails(), req.Permission)
+	franchise, err := mapper.UpdateFranchise_ProtoToModel(req)
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
 		err := constants.MappingFromProtoToModel
@@ -191,7 +163,7 @@ func (h *GRPCHandler) UpdateFranchise(ctx context.Context, req *pb.UpdateFranchi
 		))
 		return nil, err
 	}
-	updatedFranchise, err := h.adminService.UpdateFranchise(ctx, req.Id, franchise, perm)
+	updatedFranchise, err := h.adminService.UpdateFranchise(ctx, franchise)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update franchise: %v", err)
 	}
@@ -201,15 +173,6 @@ func (h *GRPCHandler) UpdateFranchise(ctx context.Context, req *pb.UpdateFranchi
 func (h *GRPCHandler) UpdateFranchiseStatus(ctx context.Context, req *pb.UpdateFranchiseStatusRequest) (*pb.UpdateResponse, error) {
 	// Convert proto to internal model
 	var method = constants.Methods.UpdateFranchiseStatus
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	perm := &model.Permission{
-		Resource: req.Permission.Resource,
-		Action:   req.Permission.Action,
-	}
 	// Convert proto to internal model
 	franchise, err := mapper.AddFranchiseStatus_FromProtoToModel(req.GetId(), req.GetStatus())
 	if err != nil {
@@ -236,7 +199,7 @@ func (h *GRPCHandler) UpdateFranchiseStatus(ctx context.Context, req *pb.UpdateF
 		))
 		return nil, err
 	}
-	updatedFranchise, err := h.adminService.UpdateFranchiseStatus(ctx, franchise, perm)
+	updatedFranchise, err := h.adminService.UpdateFranchiseStatus(ctx, franchise)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update franchise: %v", err)
 	}
@@ -244,19 +207,7 @@ func (h *GRPCHandler) UpdateFranchiseStatus(ctx context.Context, req *pb.UpdateF
 }
 
 func (h *GRPCHandler) DeleteFranchise(ctx context.Context, req *pb.DeleteFranchiseRequest) (*pb.DeletedResponse, error) {
-	// Convert proto to internal model
 	var method = constants.Methods.DeleteFranchise
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	perm := &model.Permission{
-		Resource: req.Permission.Resource,
-		Action:   req.Permission.Action,
-	}
-
-	// Convert proto to internal model
 	franchise, err := mapper.DeleteFranchise_FromProtoToModel(req.GetId(), req.GetAdminId())
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
@@ -282,7 +233,7 @@ func (h *GRPCHandler) DeleteFranchise(ctx context.Context, req *pb.DeleteFranchi
 		))
 		return nil, err
 	}
-	updatedFranchise, err := h.adminService.DeleteFranchise(ctx, franchise, perm)
+	updatedFranchise, err := h.adminService.DeleteFranchise(ctx, franchise)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update franchise: %v", err)
 	}
@@ -291,17 +242,6 @@ func (h *GRPCHandler) DeleteFranchise(ctx context.Context, req *pb.DeleteFranchi
 
 func (h *GRPCHandler) GetAllFranchises(ctx context.Context, req *pb.GetFranchisesRequest) (*pb.GetFranchisesResponse, error) {
 	var method = constants.Methods.GetAllFranchises
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	perm := &model.Permission{
-		Resource: req.Permission.Resource,
-		Action:   req.Permission.Action,
-	}
-	// Convert proto to internal model
 	page, limit, _, err := mapper.GetAllFranchises_ProtoToModel(req.GetPagination(), req.GetQuery())
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
@@ -312,7 +252,7 @@ func (h *GRPCHandler) GetAllFranchises(ctx context.Context, req *pb.GetFranchise
 		))
 		return nil, eR
 	}
-	allFranchise, err := h.adminService.GetAllFranchises(ctx, page, limit, perm)
+	allFranchise, err := h.adminService.GetAllFranchises(ctx, page, limit)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update franchise: %v", err)
 	}

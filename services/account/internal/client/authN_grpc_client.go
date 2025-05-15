@@ -67,7 +67,7 @@ func (authnClient *authNClient) VerifyToken(ctx context.Context, access_token mo
 	}
 	aClaims, err := mapper.VerifyTokenFromPbToModel(authClaims)
 	if err != nil {
-		logger.Error("something went wrong while verifying token on authN services", err, nil)
+		logger.Error("something went wrong while converting from PB to Model", err, nil)
 		return nil, err
 	}
 	return aClaims, nil

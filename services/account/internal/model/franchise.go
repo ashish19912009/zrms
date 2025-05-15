@@ -3,12 +3,23 @@ package model
 import "time"
 
 type Franchise struct {
-	BusinessName       string                 `json:"business_name"`
-	LogoURL            string                 `json:"logo_url"`
-	SubDomain          string                 `json:"sub_domain"`
-	ThemeSettings      map[string]interface{} `json:"theme_settings"`
-	Status             string                 `json:"status"`
-	Franchise_Owner_id string                 `json:"franchise_owner_id"`
+	ID                 string `json:"id"`
+	BusinessName       string `json:"business_name"`
+	LogoURL            string `json:"logo_url"`
+	SubDomain          string `json:"sub_domain"`
+	ThemeSettings      string `json:"theme_settings"`
+	Status             string `json:"status"`
+	Franchise_Owner_id string `json:"franchise_owner_id"`
+}
+
+type FranchiseByteTheme struct {
+	ID                 string `json:"id"`
+	BusinessName       string `json:"business_name"`
+	LogoURL            string `json:"logo_url"`
+	SubDomain          string `json:"sub_domain"`
+	ThemeSettings      []byte `json:"theme_settings"`
+	Status             string `json:"status"`
+	Franchise_Owner_id string `json:"franchise_owner_id"`
 }
 
 type FranchiseResponse struct {
@@ -110,6 +121,7 @@ type FranchiseAddressResponse struct {
 }
 
 type FranchiseOwner struct {
+	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Gender     string `json:"gender"`
 	Dob        string `json:"dob"`

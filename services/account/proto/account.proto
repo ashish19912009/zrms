@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package account;
 import "google/protobuf/struct.proto";
+import "google/protobuf/descriptor.proto";
 
 option go_package=  "./pb";
 
@@ -112,13 +113,11 @@ message AccountInput {
 
 message AddFranchiseRequest {
     FranchiseInput franchise_details    = 1;
-    Permission permission               = 2;
 }
 
 message UpdateFranchiseRequest {
     string id                           = 1;
     FranchiseInput franchise_details    = 2;
-    Permission permission               = 3;
 }
 
 message UpdateFranchiseStatusRequest{
@@ -307,31 +306,101 @@ message GetFranchiseAccountsResponse {
     PaginationResponse pagination = 2;
 }
 
+extend google.protobuf.MethodOptions {
+    string resource = 50001;
+    string action = 50002;
+  }
+
 service AccountService {
-    rpc CreateFranchise(AddFranchiseRequest)    returns (AddResponse);
-    rpc UpdateFranchise(UpdateFranchiseRequest) returns (UpdateResponse);
-    rpc UpdateFranchiseStatus(UpdateFranchiseStatusRequest) returns (UpdateResponse);
-    rpc DeleteFranchise(DeleteFranchiseRequest) returns(DeletedResponse);
-    rpc GetAllFranchises(GetFranchisesRequest) returns(GetFranchisesResponse);
-    rpc GetFranchiseByID(GetFranchiseByIDRequest) returns(GetFranchiseByIDResponse);
+    rpc CreateFranchise(AddFranchiseRequest)    returns (AddResponse){
+        option (resource) = "franchise";
+        option (action) = "create";
+    }
+    rpc UpdateFranchise(UpdateFranchiseRequest) returns (UpdateResponse){
+        option (resource) = "franchise";
+        option (action) = "update";
+    }
+    rpc UpdateFranchiseStatus(UpdateFranchiseStatusRequest) returns (UpdateResponse){
+        option (resource) = "franchiseStatus";
+        option (action) = "update";
+    }
+    rpc DeleteFranchise(DeleteFranchiseRequest) returns(DeletedResponse){
+        option (resource) = "franchise";
+        option (action) = "delete";
+    }
+    rpc GetAllFranchises(GetFranchisesRequest) returns(GetFranchisesResponse){
+        option (resource) = "franchise";
+        option (action) = "viewAll";
+    }
+    rpc GetFranchiseByID(GetFranchiseByIDRequest) returns(GetFranchiseByIDResponse){
+        option (resource) = "franchise";
+        option (action) = "view";
+    }
 
-    rpc CreateFranchiseDocument(AddFranchiseDocumentRequest) returns (AddResponse);
-    rpc GetFranchiseDocumentByID(GetFranchiseDocumentRequest) returns(GetFranchiseDocumentResponse);
-    rpc UpdateFranchiseDocumentByID(UpdateFranchiseDocumentRequest) returns(UpdateResponse);
-    rpc DeleteFranchiseDocumentByID(DeleteFranchiseDocumentRequest) returns(DeletedResponse);
+
+    rpc CreateFranchiseDocument(AddFranchiseDocumentRequest) returns (AddResponse){
+        option (resource) = "franchiseDocument";
+        option (action) = "create";
+    }
+    rpc GetFranchiseDocumentByID(GetFranchiseDocumentRequest) returns(GetFranchiseDocumentResponse){
+        option (resource) = "franchiseDocument";
+        option (action) = "view";
+    }
+    rpc UpdateFranchiseDocumentByID(UpdateFranchiseDocumentRequest) returns(UpdateResponse){
+        option (resource) = "franchiseDocument";
+        option (action) = "update";
+    }
+    rpc DeleteFranchiseDocumentByID(DeleteFranchiseDocumentRequest) returns(DeletedResponse){
+        option (resource) = "franchiseDocument";
+        option (action) = "delete";
+    }
    
-    rpc CreateFranchiseAddress(AddFranchiseAddressRequest) returns (AddResponse);
-    rpc GetFranchiseAddressByID(GetFranchiseAddressRequest) returns (GetFranchiseAddressResponse);
-    rpc UpdateFranchiseAddressByID(UpdateFranchiseAddressRequest) returns (UpdateResponse);
+    rpc CreateFranchiseAddress(AddFranchiseAddressRequest) returns (AddResponse){
+        option (resource) = "franchiseAddress";
+        option (action) = "create";
+    }
+    rpc GetFranchiseAddressByID(GetFranchiseAddressRequest) returns (GetFranchiseAddressResponse){
+        option (resource) = "franchiseAddress";
+        option (action) = "view";
+    }
+    rpc UpdateFranchiseAddressByID(UpdateFranchiseAddressRequest) returns (UpdateResponse){
+        option (resource) = "franchiseAddress";
+        option (action) = "update";
+    }
 
 
-    rpc CreateFranchiseOwner(AddFranchiseOwnerRequest) returns (AddResponse);
-    rpc UpdateFranchiseOwnerByID(UpdateFranchiseOwnerRequest) returns (UpdateResponse);
-    rpc GetFranchiseOwnerByID(GetFranchiseOwnerRequest) returns (GetFranchiseOwnerResponse);
+    rpc CreateFranchiseOwner(AddFranchiseOwnerRequest) returns (AddResponse){
+        option (resource) = "franchiseOwner";
+        option (action) = "create";
+    }
+    rpc UpdateFranchiseOwnerByID(UpdateFranchiseOwnerRequest) returns (UpdateResponse){
+        option (resource) = "franchiseOwner";
+        option (action) = "update";
+    }
+    rpc GetFranchiseOwnerByID(GetFranchiseOwnerRequest) returns (GetFranchiseOwnerResponse){
+        option (resource) = "franchiseOwner";
+        option (action) = "view";
+    }
 
-    rpc CreateFranchiseAccount(AddFranchiseAccountRequest) returns (AddResponse);
-    rpc GetFranchiseAccountByID(GetFranchiseAccountByIDRequest) returns (GetFranchiseAccountByIDResponse);
-    rpc GetFranchiseAccounts(GetFranchiseAccountsRequest) returns (GetFranchiseAccountsResponse);
-    rpc UpdateFranchiseAccountByID(UpdateFranchiseAccountRequest) returns (UpdateResponse);
-    rpc DeleteFranchiseAccountByID(DeleteFranchiseAccountRequest) returns (DeletedResponse);
+
+    rpc CreateFranchiseAccount(AddFranchiseAccountRequest) returns (AddResponse){
+        option (resource) = "franchiseAccount";
+        option (action) = "create";
+    }
+    rpc GetFranchiseAccountByID(GetFranchiseAccountByIDRequest) returns (GetFranchiseAccountByIDResponse){
+        option (resource) = "franchiseAccount";
+        option (action) = "view";
+    }
+    rpc GetFranchiseAccounts(GetFranchiseAccountsRequest) returns (GetFranchiseAccountsResponse){
+        option (resource) = "franchiseAccount";
+        option (action) = "viewAll";
+    }
+    rpc UpdateFranchiseAccountByID(UpdateFranchiseAccountRequest) returns (UpdateResponse){
+        option (resource) = "franchiseAccount";
+        option (action) = "update";
+    }
+    rpc DeleteFranchiseAccountByID(DeleteFranchiseAccountRequest) returns (DeletedResponse){
+        option (resource) = "franchiseAccount";
+        option (action) = "delete";
+    }
 }

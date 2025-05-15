@@ -48,8 +48,6 @@ type repository struct {
 	db *sql.DB
 }
 
-var schema = constants.DB.Schema_Outlet
-
 func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
@@ -131,10 +129,9 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 		}{
 			Schemas: []string{schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, "deleted_at"),
 		},
 	}
-
 	// Use the BuildSelectQuery helper function to build the query
 	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
 	if err != nil {

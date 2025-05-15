@@ -151,9 +151,8 @@ func ValidateFranchise(franchise *model.Franchise) error {
 		return err
 	}
 	// validate franchise_owner_id
-	// validate domain
 	if err := ValidateNotEmpty(owner_id); err != nil {
-		return err
+		return fmt.Errorf("Missing Franchise Owner ID: %s", err)
 	}
 	if err := ValidateUUID(owner_id); err != nil {
 		return err

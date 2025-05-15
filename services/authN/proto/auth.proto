@@ -6,6 +6,8 @@ import "google/protobuf/timestamp.proto";
 option go_package = "./pb;pb";
 //  export PATH=$(go env GOPATH)/bin:$PATH
 //  protoc --go_out=../ --go-grpc_out=../ auth.proto
+// protoc --proto_path=$GOPATH/src --go_out=../ --go_opt=paths=source_relative --go-grpc_out=../ --go-grpc_opt=paths=source_relative auth.proto
+
 service AuthService {
     // Login RPC - used by clients (admins, partners, etc)
     rpc Login           (LoginRequest)          returns(LoginResponse);

@@ -6,15 +6,15 @@ toolchain go1.23.8
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/ashish19912009/zrms/services/authN v0.0.0-20250510101834-98aa617e3b92
-	github.com/ashish19912009/zrms/services/authZ v0.0.0-20250510101834-98aa617e3b92
+	github.com/ashish19912009/zrms/services/authN v0.0.0-20250511153111-ca9a1a53ed05
+	github.com/ashish19912009/zrms/services/authZ v0.0.0-20250511183150-4c9b34ef4612
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 )

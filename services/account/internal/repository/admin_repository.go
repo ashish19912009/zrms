@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
@@ -19,25 +18,37 @@ go:generate mockery --name=Repository --output=internal/repository/mocks --case=
 mockery --name=Repository --dir=services/account/internal/repository --output=services/account/internal/repository/mocks --case=underscore
 **/
 
-const (
-	id             = "id"
-	franchise_id   = "franchise_id"
-	business_name  = "business_name"
-	logo_url       = "logo_url"
-	sub_domain     = "sub_domain"
-	theme_settings = "theme_settings"
-	status         = "status"
-	created_at     = "created_at"
-	updated_at     = "updated_at"
-	deleted_at     = "deleted_at"
-)
+var outlet_schema = constants.DB.Schema_Outlet
+
+var CFTC = []string{
+	constants.T_Fran.UUID,
+	constants.T_Fran.Status,
+	constants.T_Fran.BusinessName,
+	constants.T_Fran.LogoUrl,
+	constants.T_Fran.Subdomain,
+	constants.T_Fran.ThemeSettings,
+	constants.T_Fran.FranchiseOwnerID,
+}
+
+var COTC = []string{
+	constants.T_Onr.UUID,
+	constants.T_Onr.Name,
+	constants.T_Onr.Gender,
+	constants.T_Onr.DOB,
+	constants.T_Onr.MobileNo,
+	constants.T_Onr.Email,
+	constants.T_Onr.Address,
+	constants.T_Onr.AadharNo,
+	constants.T_Onr.IsVerified,
+	constants.T_Onr.Status,
+}
 
 type AdminRepository interface {
 	CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error)
-	UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error)
+	UpdateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.UpdateResponse, error)
 
 	CreateFranchise(ctx context.Context, franchise *model.Franchise) (*model.AddResponse, error)
-	UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error)
+	UpdateFranchise(ctx context.Context, franchise *model.Franchise) (*model.UpdateResponse, error)
 	UpdateFranchiseStatus(ctx context.Context, id string, status string) (*model.UpdateResponse, error)
 	DeleteFranchise(ctx context.Context, id string) (*model.DeletedResponse, error)
 
@@ -63,65 +74,47 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		return nil, err
 	}
 
-	columns := []string{
-		"id",
-		"name",
-		"gender",
-		"dob",
-		"mobile_no",
-		"email",
-		"address",
-		"aadhar_no",
-		"is_verified",
-		"status",
-		"created_at",
-	}
-	sort.Strings(columns)
-	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: columns,
+		Returning: []string{constants.T_Onr.UUID, constants.T_Onr.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(COTC, constants.T_Onr.CreatedAt),
 		},
+	}
+
+	values, err := dbutils.StructToValuesByTag(owner, COTC, "json")
+	if err != nil {
+		return nil, err
 	}
 
 	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		COTC,
 		opts,
 	)
 	if err != nil {
 		return nil, err
 	}
-	// var account = &model.FranchiseOwnerResponse{}
-	// err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{owner.Name, owner.Gender, owner.Dob, owner.MobileNo, owner.Email, owner.Address, owner.AadharNo, owner.IsVerified, owner.Status}, &account)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
-	// return account, nil
-	var createdID string
-	var created_at time.Time
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{owner.Name, owner.Gender, owner.Dob, owner.MobileNo, owner.Email, owner.Address, owner.AadharNo, owner.IsVerified, owner.Status},
-		createdID,
-		created_at,
+	var repsonse *model.AddResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
+		&repsonse,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return owner.ToResponse(createdID, created_at), nil
+	return repsonse, nil
 }
 
-func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner *model.FranchiseOwner) (*model.UpdateResponse, error) {
+func (ar *admin_repository) UpdateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.UpdateResponse, error) {
 	var (
 		method = constants.Methods.CreateOwner
 		table  = constants.DB.Table_Owner
@@ -129,48 +122,58 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
+
 	// Fields to update
-	data := map[string]any{
-		"id":          id,
-		"name":        owner.Name,
-		"gender":      owner.Gender,
-		"dob":         owner.Dob,
-		"mobile_no":   owner.MobileNo,
-		"email":       owner.Email,
-		"address":     owner.Address,
-		"aadhar_no":   owner.AadharNo,
-		"is_verified": owner.IsVerified,
-		"status":      owner.Status,
+	columns := []string{
+		constants.T_Onr.UUID,
+		constants.T_Onr.Name,
+		constants.T_Onr.Gender,
+		constants.T_Onr.DOB,
+		constants.T_Onr.MobileNo,
+		constants.T_Onr.Email,
+		constants.T_Onr.Address,
+		constants.T_Onr.AadharNo,
+		constants.T_Onr.IsVerified,
+		constants.T_Onr.Status,
 	}
 
-	columns := make([]string, 0, len(data))
+	data, err := dbutils.MapStructFieldsByTag(columns, owner, "json")
+	if err != nil {
+		logger.Fatal("something went wrong while mapping data to field", err, nil)
+	}
+
+	columns = make([]string, 0, len(data))
 	for col := range data {
 		columns = append(columns, col)
 	}
-	columns = append(columns, "updated_at")
-	sort.Strings(columns)
+
 	conditions := map[string]any{
-		"id": id,
+		constants.T_Onr.UUID: owner.ID,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Onr.UpdatedAt),
 		},
-		Returning: columns,
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
+
+	// values, err := dbutils.StructToValuesByTag(owner, columns, "json")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	var updated model.UpdateResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
@@ -183,7 +186,7 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, id string, owner
 	return &updated, nil
 }
 
-func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput *model.Franchise) (*model.AddResponse, error) {
+func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.Franchise) (*model.AddResponse, error) {
 	var (
 		method = constants.Methods.CreateFranchise
 		table  = constants.DB.Table_Franchise
@@ -192,24 +195,44 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput 
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
-
+	columns := []string{
+		constants.T_Fran.UUID,
+		constants.T_Fran.Status,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.FranchiseOwnerID,
+	}
 	// Insert into franchise table
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{id, business_name, logo_url, sub_domain, theme_settings, status, created_at},
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.CreatedAt},
+		Whilelist: struct {
+			Schemas []string
+			Tables  []string
+			Columns []string
+		}{
+			Schemas: []string{outlet_schema},
+			Tables:  []string{table},
+			Columns: append(columns, constants.T_Fran.CreatedAt),
+		},
 	}
-	opts.Whilelist.Schemas = []string{schema}
-	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = []string{id, business_name, logo_url, sub_domain, theme_settings, status, created_at, updated_at, deleted_at}
 
-	query, err := dbutils.BuildInsertQuery(method, schema, table, []string{business_name, logo_url, sub_domain, theme_settings, status}, opts)
+	query, err := dbutils.BuildInsertQuery(method, outlet_schema, table, columns, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := dbutils.StructToValuesByTag(fInput, columns, "json")
 	if err != nil {
 		return nil, err
 	}
 
 	var franchise model.AddResponse
 	if err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query,
-		[]any{id, franchiseInput.BusinessName, franchiseInput.LogoURL, franchiseInput.SubDomain, franchiseInput.ThemeSettings, franchiseInput.Status},
+		values,
 		&franchise,
+		opts.Returning...,
 	); err != nil {
 		return nil, err
 	}
@@ -217,7 +240,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, franchiseInput 
 	return &franchise, nil
 }
 
-func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, franchise *model.Franchise) (*model.UpdateResponse, error) {
+func (ar *admin_repository) UpdateFranchise(ctx context.Context, franchise *model.Franchise) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchise
 	var table = constants.DB.Table_Franchise
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -225,21 +248,33 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 	}
 
 	columns := []string{
-		business_name, logo_url, sub_domain, theme_settings, status,
+		constants.T_Fran.UUID,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.Status,
+		constants.T_Fran.FranchiseOwnerID,
 	}
 
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: append(columns, "id", "updated_at"),
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 	}
-	opts.Whilelist.Schemas = []string{schema}
+	opts.Whilelist.Schemas = []string{outlet_schema}
 	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, "id", "updated_at")
+	opts.Whilelist.Columns = append(columns, constants.T_Fran.UpdatedAt)
+
+	// Define the condition map for WHERE clause
+	conditions := map[string]any{
+		constants.T_Fran.UUID: franchise.ID,
+	}
 
 	query, args, err := dbutils.BuildUpdateQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		append(columns, "id"), map[string]any{"id": id},
+		columns,
+		conditions,
 		opts,
 	)
 	if err != nil {
@@ -249,7 +284,8 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, id string, fran
 	var updated model.UpdateResponse
 	err = dbutils.ExecuteAndScanRow(ctx, constants.Methods.UpdateFranchise, ar.db, query,
 		args,
-		&updated.ID, &updated.UpdatedAt,
+		&updated,
+		opts.Returning...,
 	)
 	if err != nil {
 		return nil, err
@@ -266,21 +302,21 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 	}
 
 	// Prepare columns and condition
-	columns := []string{"status", "updated_at"}
-	condition := map[string]any{"id": id} // Use map for conditions
+	columns := []string{constants.T_Fran.Status, constants.T_Fran.UpdatedAt}
+	condition := map[string]any{constants.T_Fran.UUID: id} // Use map for conditions
 
 	// Set up whitelist and returning options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: append(columns, "id"),
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 	}
-	opts.Whilelist.Schemas = []string{schema}
+	opts.Whilelist.Schemas = []string{outlet_schema}
 	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, "id")
+	opts.Whilelist.Columns = append(columns, constants.T_Fran.UUID)
 
 	// Generate the update query using the BuildUpdateQuery helper function
 	query, args, err := dbutils.BuildUpdateQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
 		columns,
 		condition,
@@ -294,17 +330,11 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 	args = []any{status, time.Now(), id} // Manually prepare args matching placeholders
 
 	// Execute the query and scan returned ID
-	var updated_franchise *model.FranchiseResponse
-	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args, &updated_franchise); err != nil {
+	var updated_franchise *model.UpdateResponse
+	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args, &updated_franchise, opts.Returning...); err != nil {
 		return nil, err
 	}
-	if updated_franchise.ID == id && updated_franchise.Status == status {
-		return &model.UpdateResponse{
-			ID:        updated_franchise.ID,
-			UpdatedAt: *updated_franchise.UpdatedAt,
-		}, nil
-	}
-	return nil, nil
+	return updated_franchise, nil
 }
 
 func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*model.DeletedResponse, error) {
@@ -315,21 +345,23 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*mo
 	}
 
 	// Columns to update
-	columns := []string{"deleted_at"}
+	columns := []string{constants.T_Fran.DeletedAt}
 
 	// WHERE condition
-	condition := map[string]any{"id": id}
+	condition := map[string]any{constants.T_Fran.UUID: id}
 
 	// Options: whitelist and returning (optional, here we skip RETURNING)
-	opts := &dbutils.QueryBuilderOptions{}
-	opts.Whilelist.Schemas = []string{schema}
+	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.DeletedAt},
+	}
+	opts.Whilelist.Schemas = []string{outlet_schema}
 	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, "id")
+	opts.Whilelist.Columns = append(columns, constants.T_Fran.UUID)
 
 	// Build the update query
 	query, args, err := dbutils.BuildUpdateQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
 		columns,
 		condition,
@@ -343,8 +375,8 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*mo
 	args = []any{time.Now(), id}
 
 	// Execute the query
-	var deletedID string
-	if err := dbutils.ExecuteAndScanRow(ctx, constants.Methods.DeleteFranchise, ar.db, query, args, &deletedID); err != nil {
+	var deleted *model.DeletedResponse
+	if err := dbutils.ExecuteAndScanRow(ctx, constants.Methods.DeleteFranchise, ar.db, query, args, &deleted, opts.Returning...); err != nil {
 		return nil, err
 	}
 	return &model.DeletedResponse{
@@ -354,25 +386,27 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*mo
 }
 
 func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error) {
-	// Step 1: DB Connection Check
 	var method = constants.Methods.GetAllFranchises
 	var table = constants.DB.Table_Franchise
+
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
 
-	// Step 2: Calculate offset for pagination
 	offset := (page - 1) * limit
-
-	// Step 3: Define SELECT columns
 	columns := []string{
-		"id", "business_name", "logo_url", "sub_domain",
-		"theme_settings", "status", "created_at",
+		constants.T_Fran.UUID,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.Status,
+		constants.T_Fran.FranchiseOwnerID,
 	}
 
 	// Step 4: WHERE conditions
 	conditions := map[string]any{
-		"deleted_at": nil, // soft delete filter
+		constants.T_Fran.DeletedAt: nil, // soft delete filter
 	}
 
 	// Step 5: Build query options with whitelist
@@ -382,7 +416,7 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
 			Columns: columns,
 		},
@@ -391,7 +425,7 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 	// Step 6: Build SELECT query using helper
 	query, args, err := dbutils.BuildSelectQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
 		columns,
 		conditions,
