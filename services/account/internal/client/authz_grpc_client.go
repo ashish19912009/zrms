@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/mapper"
@@ -32,27 +31,26 @@ func NewAuthZServiceClient(host string, port string) (AuthZClient, error) {
 	if host == "" || port == "" {
 		logger.Fatal("host and port must be set", nil, nil)
 	}
+
 	address := fmt.Sprintf("%s:%s", host, port)
 
-	// Choose transport credentials based on env
 	var opts []grpc.DialOption
 	if env == "prod" {
 		creds, err := credentials.NewClientTLSFromFile("cert.pem", "")
 		if err != nil {
-			logger.Fatal("Failed to load TLS credentials: %v", err, nil)
+			logger.Fatal("Failed to load TLS credentials", err, nil)
 		}
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
+
 	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
-		logger.Fatal("Failed to connect to AuthZ service: %v", err, nil)
+		logger.Fatal("Failed to connect to AuthZ service", err, nil)
 	}
 
 	client := pb.NewAuthZServiceClient(conn)
-	_, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
 	return &authZClient{
 		client: client,
 		conn:   conn,
@@ -86,6 +84,7 @@ func (authzClient *authZClient) BatchCheckAccess(ctx context.Context, accountID,
 			"layer":  "client",
 			"method": "BatchCheckAccess",
 		})
+		return nil, err
 	}
 	res, err := authzClient.client.BatchCheckAccess(ctx, aM)
 	if err != nil {
@@ -93,6 +92,7 @@ func (authzClient *authZClient) BatchCheckAccess(ctx context.Context, accountID,
 			"layer":  "client",
 			"method": "BatchCheckAccess",
 		})
+		return nil, err
 	}
 	response, err := mapper.BatchCheckAccessFromPbToModel(res)
 	return response, nil

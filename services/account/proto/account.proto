@@ -112,13 +112,11 @@ message AccountInput {
 
 message AddFranchiseRequest {
     FranchiseInput franchise_details    = 1;
-    Permission permission               = 2;
 }
 
 message UpdateFranchiseRequest {
     string id                           = 1;
     FranchiseInput franchise_details    = 2;
-    Permission permission               = 3;
 }
 
 message UpdateFranchiseStatusRequest{

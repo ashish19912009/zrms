@@ -10,8 +10,7 @@ type Token struct {
 }
 
 type RequestContext struct {
-	Claims     *AuthClaims
-	Permission *Permission // {Resource, Action}
+	Claims *AuthClaims
 }
 
 type Permission struct {

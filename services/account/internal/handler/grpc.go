@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 
+	"github.com/ashish19912009/zrms/services/account/internal/client"
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/mapper"
@@ -23,9 +24,12 @@ type GRPCHandler struct {
 	pb.UnimplementedAccountServiceServer
 	accountService service.AccountService
 	adminService   service.AdminService
+	client         client.AuthZClient
 }
 
-func NewGRPCHandler(accountService service.AccountService, adminService service.AdminService) *GRPCHandler {
+func NewGRPCHandler(
+	accountService service.AccountService,
+	adminService service.AdminService) *GRPCHandler {
 	return &GRPCHandler{
 		accountService: accountService,
 		adminService:   adminService,
@@ -120,14 +124,7 @@ func (h *GRPCHandler) UpdateNewOwner(ctx context.Context, id string, req *pb.Add
 
 func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseRequest) (*pb.AddResponse, error) {
 	var method = constants.Methods.CreateFranchise
-	// Convert proto to internal model
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Resource)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	franchise, perm, err := mapper.AddFranchise_ProtoToModel(req.GetFranchiseDetails(), req.Permission)
-	// reqPerm != nil || reqPerm.Resource == "" || reqPerm.Action == ""
+	franchise, err := mapper.AddFranchise_ProtoToModel(req)
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
 		err := constants.MappingFromProtoToModel
@@ -145,7 +142,7 @@ func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseR
 		return nil, err
 	}
 
-	createdFranchise, err := h.adminService.CreateFranchise(ctx, franchise, perm)
+	createdFranchise, err := h.adminService.CreateFranchise(ctx, franchise)
 	if err != nil {
 		eR := status.Errorf(codes.Internal, constants.FailedToCreateFranchsie, err)
 		errMsg := constants.SomethinWentWrongOnNew + `new owner`
@@ -160,13 +157,7 @@ func (h *GRPCHandler) CreateFranchise(ctx context.Context, req *pb.AddFranchiseR
 
 func (h *GRPCHandler) UpdateFranchise(ctx context.Context, req *pb.UpdateFranchiseRequest) (*pb.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchise
-	err := validations.ValidateNotEmpty(req.Permission.Resource)
-	err2 := validations.ValidateNotEmpty(req.Permission.Action)
-	if err != nil || err2 != nil {
-		return nil, status.Errorf(codes.InvalidArgument, constants.MissingPermission, err)
-	}
-	// Convert proto to internal model
-	franchise, perm, err := mapper.AddFranchise_ProtoToModel(req.GetFranchiseDetails(), req.Permission)
+	franchise, err := mapper.UpdateFranchise_ProtoToModel(req)
 	if err != nil {
 		eR := status.Errorf(codes.InvalidArgument, constants.InvalidTimestamp, err)
 		err := constants.MappingFromProtoToModel
@@ -191,7 +182,7 @@ func (h *GRPCHandler) UpdateFranchise(ctx context.Context, req *pb.UpdateFranchi
 		))
 		return nil, err
 	}
-	updatedFranchise, err := h.adminService.UpdateFranchise(ctx, req.Id, franchise, perm)
+	updatedFranchise, err := h.adminService.UpdateFranchise(ctx, franchise)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update franchise: %v", err)
 	}

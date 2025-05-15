@@ -188,11 +188,11 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 	}
 	columns := []string{
 		constants.T_Fran.UUID,
+		constants.T_Fran.Status,
 		constants.T_Fran.BusinessName,
 		constants.T_Fran.LogoUrl,
 		constants.T_Fran.Subdomain,
 		constants.T_Fran.ThemeSettings,
-		constants.T_Fran.Status,
 		constants.T_Fran.FranchiseOwnerID,
 	}
 	// Insert into franchise table
@@ -381,25 +381,27 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*mo
 }
 
 func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, limit int32) ([]model.FranchiseResponse, error) {
-	// Step 1: DB Connection Check
 	var method = constants.Methods.GetAllFranchises
 	var table = constants.DB.Table_Franchise
+
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
 
-	// Step 2: Calculate offset for pagination
 	offset := (page - 1) * limit
-
-	// Step 3: Define SELECT columns
 	columns := []string{
-		"id", "business_name", "logo_url", "sub_domain",
-		"theme_settings", "status", "created_at",
+		constants.T_Fran.UUID,
+		constants.T_Fran.BusinessName,
+		constants.T_Fran.LogoUrl,
+		constants.T_Fran.Subdomain,
+		constants.T_Fran.ThemeSettings,
+		constants.T_Fran.Status,
+		constants.T_Fran.FranchiseOwnerID,
 	}
 
 	// Step 4: WHERE conditions
 	conditions := map[string]any{
-		"deleted_at": nil, // soft delete filter
+		constants.T_Fran.DeletedAt: nil, // soft delete filter
 	}
 
 	// Step 5: Build query options with whitelist
