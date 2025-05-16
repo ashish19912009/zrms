@@ -20,6 +20,7 @@ mockery --name=Repository --dir=services/account/internal/repository --output=se
 
 var outlet_schema = constants.DB.Schema_Outlet
 
+// CFTC - Common Franchise Table Column
 var CFTC = []string{
 	constants.T_Fran.UUID,
 	constants.T_Fran.Status,
@@ -30,6 +31,7 @@ var CFTC = []string{
 	constants.T_Fran.FranchiseOwnerID,
 }
 
+// CFTC - Common Owner Table Column
 var COTC = []string{
 	constants.T_Onr.UUID,
 	constants.T_Onr.Name,
@@ -87,11 +89,6 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		},
 	}
 
-	values, err := dbutils.StructToValuesByTag(owner, COTC, "json")
-	if err != nil {
-		return nil, err
-	}
-
 	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
@@ -100,6 +97,11 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 		COTC,
 		opts,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := dbutils.MapValuesDirect(owner, COTC, "json")
 	if err != nil {
 		return nil, err
 	}
@@ -123,37 +125,13 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, owner *model.Fra
 		return nil, err
 	}
 
-	// Fields to update
-	columns := []string{
-		constants.T_Onr.UUID,
-		constants.T_Onr.Name,
-		constants.T_Onr.Gender,
-		constants.T_Onr.DOB,
-		constants.T_Onr.MobileNo,
-		constants.T_Onr.Email,
-		constants.T_Onr.Address,
-		constants.T_Onr.AadharNo,
-		constants.T_Onr.IsVerified,
-		constants.T_Onr.Status,
-	}
-
-	data, err := dbutils.MapStructFieldsByTag(columns, owner, "json")
-	if err != nil {
-		logger.Fatal("something went wrong while mapping data to field", err, nil)
-	}
-
-	columns = make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
-
 	conditions := map[string]any{
 		constants.T_Onr.UUID: owner.ID,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
+		Returning: []string{constants.T_Onr.UUID, constants.T_Onr.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
@@ -161,22 +139,23 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, owner *model.Fra
 		}{
 			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: append(columns, constants.T_Onr.UpdatedAt),
+			Columns: append(COTC, constants.T_Onr.UUID, constants.T_Onr.UpdatedAt),
 		},
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, COTC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	// values, err := dbutils.StructToValuesByTag(owner, columns, "json")
-	// if err != nil {
-	// 	return nil, err
-	// }
+	values, err := dbutils.MapValuesDirect(owner, COTC, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
+	copy(args[:len(COTC)], values)
 
 	var updated model.UpdateResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
 		&updated,
 	)
 	if err != nil {
@@ -223,7 +202,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 		return nil, err
 	}
 
-	values, err := dbutils.StructToValuesByTag(fInput, columns, "json")
+	values, err := dbutils.MapValuesDirect(fInput, columns, "json")
 	if err != nil {
 		return nil, err
 	}

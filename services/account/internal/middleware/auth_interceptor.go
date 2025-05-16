@@ -10,6 +10,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/helper"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
+	"github.com/ashish19912009/zrms/services/account/pkg/permissions"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -30,7 +31,6 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
-		fmt.Printf("rpc name: %s", info.FullMethod)
 		claims, err := a.extractAndValidateToken(ctx)
 		if err != nil || claims == nil {
 			logger.Error("authentication failed", err, map[string]interface{}{
@@ -38,6 +38,12 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 				"method": "Unary",
 			})
 			return nil, status.Errorf(codes.Unauthenticated, "authentication failed")
+		}
+		ctx = context.WithValue(ctx, model.RequestContextKey, &model.RequestContext{
+			Claims: claims,
+		})
+		if claims.AccountType == "superAdmin" || claims.AccountType == "superadmin" {
+			return handler(ctx, req)
 		}
 		internalCall, rPerm, err := a.extractAndValidatePermission(ctx)
 		if err != nil || rPerm == nil {
@@ -47,12 +53,18 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 			})
 			return nil, status.Errorf(codes.PermissionDenied, "no permission requested")
 		}
-		ctx = context.WithValue(ctx, model.RequestContextKey, &model.RequestContext{
-			Claims: claims,
-		})
+
 		// bypass Authz if service internal call
 		if internalCall != nil && *internalCall {
 			return handler(ctx, req)
+		}
+
+		perm, found := permissions.Get(info.FullMethod)
+		if !found {
+			return nil, fmt.Errorf("requested RPC not found")
+		}
+		if rPerm.Resource != perm.Resource || rPerm.Action != perm.Action {
+			return nil, fmt.Errorf("request RPC doesnot match, or permission or resource mismatch")
 		}
 		isAuthorized, err := a.authz_client.CheckAccess(ctx, claims.RegisteredClaims.Subject, claims.FranchiseID, rPerm.Resource, rPerm.Action)
 		if err != nil {
