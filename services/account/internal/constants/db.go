@@ -81,3 +81,119 @@ var T_Onr = struct {
 	UpdatedAt:  "updated_at",
 	DeletedAt:  "deleted_at",
 }
+
+var Acc = struct {
+	UUID        string
+	FranchiseID string
+	EmpID       string
+	LoginID     string
+	Password    string
+	AccountType string
+	Name        string
+	MobileNo    string
+	Email       string
+	RoleID      string
+	Status      string
+	CreatedAt   string
+	UpdatedAt   string
+	DeletedAt   string
+}{
+	UUID:        "id",
+	FranchiseID: "franchise_id",
+	EmpID:       "employee_id",
+	LoginID:     "login_id",
+	Password:    "password",
+	AccountType: "account_type",
+	Name:        "name",
+	MobileNo:    "mobile_no",
+	Email:       "email",
+	RoleID:      "role_id",
+	Status:      "status",
+	CreatedAt:   "created_at",
+	UpdatedAt:   "updated_at",
+	DeletedAt:   "deleted_at",
+}
+
+var F_doc = struct {
+	UUID           string
+	FranchiseID    string
+	DocumentTypeID string
+	DocumentURL    string
+	UploadedBy     string
+	Status         string
+	Remark         string
+	VerifiedAt     string
+	CreatedAt      string
+	UpdatedAt      string
+	DeletedAt      string
+}{
+	UUID:           "id",
+	FranchiseID:    "franchise_id",
+	DocumentTypeID: "document_type_id",
+	DocumentURL:    "document_url",
+	UploadedBy:     "uploaded_by",
+	Status:         "status",
+	Remark:         "remark",
+	VerifiedAt:     "verified_at",
+	CreatedAt:      "created_at",
+	UpdatedAt:      "updated_at",
+	DeletedAt:      "deleted_at",
+}
+
+var F_addr = struct {
+	UUID        string
+	FranchiseID string
+	AddressLine string
+	City        string
+	State       string
+	Country     string
+	Pincode     string
+	Latitude    string
+	Longitude   string
+	IsVerified  string
+	CreatedAt   string
+	UpdatedAt   string
+	DeletedAt   string
+}{
+	UUID:        "id",
+	FranchiseID: "franchise_id",
+	AddressLine: "address_line",
+	City:        "city",
+	State:       "state",
+	Country:     "country",
+	Pincode:     "pincode",
+	Latitude:    "latitude",
+	Longitude:   "longitude",
+	IsVerified:  "is_verified",
+	CreatedAt:   "created_at",
+	UpdatedAt:   "updated_at",
+	DeletedAt:   "deleted_at",
+}
+
+var F_role = struct {
+	UUID        string
+	FranchiseID string
+	Name        string
+	Description string
+	IsDefault   string
+	CreatedAt   string
+	UpdatedAt   string
+	DeletedAt   string
+}{
+	UUID:        "id",
+	FranchiseID: "franchise_id",
+	Name:        "name",
+	Description: "description",
+	IsDefault:   "is_default",
+	CreatedAt:   "created_at",
+	UpdatedAt:   "updated_at",
+	DeletedAt:   "deleted_at",
+}
+
+var F_Role_Per = struct {
+	RoleID       string
+	PermissionID string
+}{
+	RoleID:       "role_id",
+	PermissionID: "permission_id",
+}

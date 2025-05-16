@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/authN/internal/config"
 	"github.com/ashish19912009/zrms/services/authN/internal/handler"
+	"github.com/ashish19912009/zrms/services/authN/internal/jwk"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 	"github.com/ashish19912009/zrms/services/authN/internal/repository"
 	"github.com/ashish19912009/zrms/services/authN/internal/service"
@@ -97,12 +99,12 @@ func main() {
 
 	// Initialize in-memory store using config
 	storeManager, storeCfg, err := store.NewStoreManager(configFilePath)
-	logger.Info("Store Manager", map[string]interface{}{
-		"storeManager": storeManager,
-	})
-	logger.Info("Store Config", map[string]interface{}{
-		"storeCfg": storeCfg,
-	})
+	// logger.Info("Store Manager", map[string]interface{}{
+	// 	"storeManager": storeManager,
+	// })
+	// logger.Info("Store Config", map[string]interface{}{
+	// 	"storeCfg": storeCfg,
+	// })
 	if err != nil {
 		log.Fatalf("Failed to initialize store manager: %v", err)
 	}
@@ -116,6 +118,11 @@ func main() {
 	tokenManger, err := token.NewjwtManager(cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath)
 	if err != nil {
 		log.Fatalf("failed to create JWT manager: %v", err)
+	}
+
+	// Initialize the JWK set using the manager's public key
+	if err := jwk.InitializeJWK(tokenManger.PublicKey(), cfg.KeyID); err != nil {
+		log.Fatalf("Failed to initialize JWK: %v", err)
 	}
 
 	// register grpc server
@@ -146,18 +153,40 @@ func main() {
 	if cfg.Env != "production" {
 		reflection.Register(grpcServer)
 	}
+	httpErrChan := make(chan error)
+	go func() {
+		http.HandleFunc("/.well-known/jwks.json", jwk.Handler)
+
+		httpPort := os.Getenv("JWK_HTTP_PORT")
+		if httpPort == "" {
+			httpPort = "8080" // default fallback
+		}
+
+		logger.Info("Starting JWK HTTP server", map[string]interface{}{
+			"port": httpPort,
+		})
+
+		if err := http.ListenAndServe(":"+httpPort, nil); err != nil {
+			httpErrChan <- err
+		}
+	}()
+
+	// Start gRPC server in main goroutine
 	log.Printf("✅ AuthN gRPC server is running on port %s", cfg.Port)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	grpcErrChan := make(chan error)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			grpcErrChan <- err
+		}
+	}()
+
+	// Wait for either server to fail
+	select {
+	case err := <-httpErrChan:
+		logger.Error("HTTP server failed", err, nil)
+		os.Exit(1)
+	case err := <-grpcErrChan:
+		logger.Error("gRPC server failed", err, nil)
+		os.Exit(1)
 	}
 }
-
-/**
-Example usage
-logger.Info("Starting authentication service", map[string]interface{}{
-	"env": "local",
-})
-logger.Debug("Debugging mode active", nil)
-logger.Warn("High CPU usage detected", nil)
-logger.Error("Database connection failed", nil, nil)
-*/

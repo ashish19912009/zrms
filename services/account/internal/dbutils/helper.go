@@ -17,6 +17,10 @@ type tagCacheKey struct {
 	Type reflect.Type
 	Tag  string
 }
+type tagCacheDirectKey struct {
+	Type reflect.Type
+	Tag  string
+}
 
 var (
 	scanTagCache   = make(map[string]map[reflect.Type]map[string][]int) // tag -> struct type -> tag name -> field index path
@@ -228,4 +232,71 @@ func MapStructFieldsByTag(columns []string, inputStruct any, tag string) (map[st
 	}
 
 	return result, nil
+}
+
+// MapValues extracts values from a struct based on the given tag and returns them
+// in the order of the provided columns.
+// columns: Ordered list of fields you want.
+
+// input: Any struct or pointer to struct.
+
+// tag: e.g., "json", "db" — whatever tags your struct uses.
+func MapValues(columns []string, input any, tag string) ([]any, error) {
+	// Extract field map using your existing utility
+	fieldMap, err := MapStructFieldsByTag(columns, input, tag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to map struct fields: %w", err)
+	}
+
+	values := make([]any, len(columns))
+	for i, col := range columns {
+		val, ok := fieldMap[col]
+		if !ok {
+			return nil, fmt.Errorf("missing value for column: %s", col)
+		}
+		values[i] = val
+	}
+
+	return values, nil
+}
+
+// leaner version of MapValues that avoids creating a map[string]any internally:
+func MapValuesDirect(input any, columns []string, tag string) ([]any, error) {
+	if input == nil {
+		return nil, errors.New("input cannot be nil")
+	}
+
+	v := reflect.ValueOf(input)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	t := v.Type()
+	if t.Kind() != reflect.Struct {
+		return nil, errors.New("input must be a struct or pointer to struct")
+	}
+
+	cacheKey := tagCacheDirectKey{Type: t, Tag: tag}
+	var tagToIndex map[string]int
+	if cached, ok := structTagCache.Load(cacheKey); ok {
+		tagToIndex = cached.(map[string]int)
+	} else {
+		tagToIndex = make(map[string]int)
+		for i := 0; i < t.NumField(); i++ {
+			tagVal := t.Field(i).Tag.Get(tag)
+			if tagVal != "" {
+				tagToIndex[tagVal] = i
+			}
+		}
+		structTagCache.Store(cacheKey, tagToIndex)
+	}
+
+	values := make([]any, len(columns))
+	for i, col := range columns {
+		fieldIndex, ok := tagToIndex[col]
+		if !ok {
+			return nil, fmt.Errorf("tag '%s' not found in struct", col)
+		}
+		values[i] = v.Field(fieldIndex).Interface()
+	}
+	return values, nil
 }

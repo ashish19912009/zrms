@@ -16,27 +16,78 @@ go:generate mockery --name=Repository --output=services/account/internal/reposit
 mockery --name=Repository --dir=services/account/internal/repository --output=services/account/internal/repository/mocks --case=underscore
 **/
 
+// CFATC - Common Franchise Account Table Columns
+var CFATC = []string{
+	constants.Acc.FranchiseID,
+	constants.Acc.EmpID,
+	constants.Acc.LoginID,
+	constants.Acc.Password,
+	constants.Acc.AccountType,
+	constants.Acc.Name,
+	constants.Acc.MobileNo,
+	constants.Acc.Email,
+	constants.Acc.RoleID,
+	constants.Acc.Status,
+}
+
+// CFDTC - Common Franchise Document Table Columns
+var CFDTC = []string{
+	constants.F_doc.FranchiseID,
+	constants.F_doc.DocumentTypeID,
+	constants.F_doc.DocumentURL,
+	constants.F_doc.UploadedBy,
+	constants.F_doc.Status,
+	constants.F_doc.Remark,
+	constants.F_doc.VerifiedAt,
+}
+
+// CFDTC - Common Franchise Address Table Columns
+var CFAddrTC = []string{
+	constants.F_addr.FranchiseID,
+	constants.F_addr.AddressLine,
+	constants.F_addr.City,
+	constants.F_addr.State,
+	constants.F_addr.Country,
+	constants.F_addr.Pincode,
+	constants.F_addr.Latitude,
+	constants.F_addr.Longitude,
+	constants.F_addr.IsVerified,
+}
+
+// CFRTC - Common Franchise Role Table Columns
+var CFRTC = []string{
+	constants.F_role.FranchiseID,
+	constants.F_role.Name,
+	constants.F_role.Description,
+	constants.F_role.IsDefault,
+}
+
+var CRPTC = []string{
+	constants.F_Role_Per.RoleID,
+	constants.F_Role_Per.PermissionID,
+}
+
 type Repository interface {
 	GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error)
 	GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error)
 	GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
 	CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
 
-	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
-	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
+	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error)
+	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error)
 	GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
 	GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
 
 	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error)
-	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error)
+	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error)
 	GetAllFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponseComplete, error)
 
 	AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.AddResponse, error)
-	UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error)
+	UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.UpdateResponse, error)
 	GetFranchiseAddressByID(ctx context.Context, id string) (*model.FranchiseAddressResponse, error)
 
 	AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.AddResponse, error)
-	UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error)
+	UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.UpdateResponse, error)
 	GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error)
 
 	AddPermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
@@ -60,32 +111,30 @@ func (ar *repository) GetFranchiseByID(ctx context.Context, id string) (*model.F
 	}
 
 	// Define the columns you need to retrieve
-	columns := []string{
-		"id", "business_name", "logo_url", "sub_domain", "theme_settings",
-		"status", "created_at", "updated_at",
-	}
+	columns := append(CFTC, constants.T_Fran.CreatedAt, constants.T_Fran.UpdatedAt)
 
 	// Define the condition map for WHERE clause
 	conditions := map[string]any{
-		"id":         id,
-		"deleted_at": nil, // Filter deleted records
+		constants.T_Fran.UUID:      id,
+		constants.T_Fran.DeletedAt: nil, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: columns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
 			Columns: columns,
 		},
 	}
 
 	// Use the BuildSelectQuery helper function to build the query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +142,8 @@ func (ar *repository) GetFranchiseByID(ctx context.Context, id string) (*model.F
 	// Execute query and scan the result into the model
 	var franchise model.FranchiseResponse
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&franchise.ID, &franchise.BusinessName, &franchise.LogoURL, &franchise.SubDomain,
-		&franchise.ThemeSettings, &franchise.Status, &franchise.CreatedAt, &franchise.UpdatedAt,
+		&franchise,
+		opts.Returning...,
 	); err != nil {
 		return nil, err
 	}
@@ -109,31 +158,29 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 	}
 
 	// Define the columns you need to retrieve
-	columns := []string{
-		"id", "business_name", "logo_url", "sub_domain", "theme_settings",
-		"status", "created_at", "updated_at",
-	}
+	columns := append(CFTC, constants.T_Fran.CreatedAt, constants.T_Fran.UpdatedAt)
 
 	// Define the condition map for WHERE clause
 	conditions := map[string]any{
-		"business_name": b_name,
-		"deleted_at":    nil, // Filter deleted records
+		constants.T_Fran.BusinessName: b_name,
+		constants.T_Fran.DeletedAt:    nil, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: columns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: append(columns, "deleted_at"),
+			Columns: append(columns, constants.T_Fran.DeletedAt),
 		},
 	}
 	// Use the BuildSelectQuery helper function to build the query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +188,8 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 	// Execute query and scan the result into the model
 	var franchise model.FranchiseResponse
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&franchise.ID, &franchise.BusinessName, &franchise.LogoURL, &franchise.SubDomain,
-		&franchise.ThemeSettings, &franchise.Status, &franchise.CreatedAt, &franchise.UpdatedAt,
+		&franchise,
+		opts.Returning...,
 	); err != nil {
 		return nil, err
 	}
@@ -157,31 +204,34 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 	}
 
 	// Define the columns you need to retrieve
-	columns := []string{
-		"id", "name", "gender", "dob", "mobile_no", "email",
-		"address", "aadhar_no", "is_verified", "created_at",
-	}
+	// columns := []string{
+	// 	"id", "name", "gender", "dob", "mobile_no", "email",
+	// 	"address", "aadhar_no", "is_verified", "created_at",
+	// }
+	columns := append(COTC, constants.T_Onr.CreatedAt, constants.T_Fran.UpdatedAt)
 
 	// Define the conditions for WHERE clause
 	conditions := map[string]any{
-		"franchise_id": id, // Use franchise_id for filtering
+		constants.T_Onr.UUID:       id,  // Use franchise_id for filtering
+		constants.T_Fran.DeletedAt: nil, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: columns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Onr.DeletedAt),
 		},
 	}
 
 	// Use BuildSelectQuery to build the query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +239,8 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 	// Execute the query and scan the result into the model
 	var owner model.FranchiseOwnerResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&owner.ID, &owner.Name, &owner.Gender, &owner.Dob, &owner.MobileNo,
-		&owner.Email, &owner.Address, &owner.AadharNo, &owner.IsVerified, &owner.CreatedAt,
+		&owner,
+		opts.Returning...,
 	)
 	if err != nil {
 		return nil, err
@@ -199,7 +249,7 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 	return &owner, nil
 }
 
-func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error) {
+func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharNo string) (*model.FranchiseOwnerResponse, error) {
 	var method = constants.Methods.CheckIfOwnerExistsByAadharID
 	var table = constants.DB.Table_Owner
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
@@ -207,31 +257,29 @@ func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, id strin
 	}
 
 	// Define the columns you need to retrieve
-	columns := []string{
-		"id", "name", "gender", "dob", "mobile_no", "email",
-		"address", "aadhar_no", "is_verified", "created_at",
-	}
+	columns := append(COTC, constants.T_Onr.CreatedAt, constants.T_Onr.UpdatedAt)
 
 	// Define the conditions for WHERE clause
 	conditions := map[string]any{
-		"aadhar_no": id, // Use franchise_id for filtering
+		constants.T_Onr.AadharNo: aadharNo, // Use franchise_id for filtering
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: columns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
 			Columns: columns,
 		},
 	}
 
 	// Use BuildSelectQuery to build the query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -239,17 +287,16 @@ func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, id strin
 	// Execute the query and scan the result into the model
 	var owner model.FranchiseOwnerResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&owner.ID, &owner.Name, &owner.Gender, &owner.Dob, &owner.MobileNo,
-		&owner.Email, &owner.Address, &owner.AadharNo, &owner.IsVerified, &owner.CreatedAt,
+		&owner,
+		opts.Returning...,
 	)
 	if err != nil {
 		return nil, err
 	}
-
 	return &owner, nil
 }
 
-func (ar *repository) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
+func (ar *repository) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error) {
 	var method = constants.Methods.CreateFranchiseAccount
 	var table = constants.DB.Table_Franchise_Accounts
 
@@ -257,67 +304,40 @@ func (ar *repository) CreateFranchiseAccount(ctx context.Context, account *model
 		return nil, err
 	}
 
-	// Fields to insert
-	data := map[string]any{
-		"franchise_id": account.FranchiseID,
-		"employee_id":  account.EmployeeID,
-		"login_id":     account.LoginID,
-		"password":     account.Password,
-		"account_type": account.AccountType,
-		"name":         account.Name,
-		"mobile_no":    account.MobileNo,
-		"email":        account.Email,
-		"role_id":      account.RoleID,
-		"status":       account.Status,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
-
 	// Whitelist for safe inserting
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: append(columns, "id", "created_at"),
+		Returning: []string{constants.Acc.UUID, constants.Acc.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(CFATC, constants.Acc.CreatedAt),
 		},
 	}
 
-	query, err := dbutils.BuildInsertQuery(method, schema, table, columns, opts)
+	values, err := dbutils.MapValuesDirect(account, CFATC, "json")
 	if err != nil {
 		return nil, err
 	}
 
-	var inserted model.FranchiseAccountResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{account.FranchiseID, account.EmployeeID, account.LoginID, account.Password, account.AccountType, account.Name, account.MobileNo, account.Email, account.RoleID, account.Status},
-		&inserted.ID,
-		&inserted.FranchiseID,
-		&inserted.EmployeeID,
-		&inserted.LoginID,
-		&inserted.AccountType,
-		&inserted.Name,
-		&inserted.MobileNo,
-		&inserted.Email,
-		&inserted.RoleName, // assuming role name is returned
-		&inserted.Status,
-		&inserted.CreatedAt,
-		&inserted.UpdatedAt,
-	)
+	query, err := dbutils.BuildInsertQuery(method, outlet_schema, table, CFATC, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return &inserted, nil
+	var newAccount *model.AddResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values, &newAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	return newAccount, nil
 }
 
-func (ar *repository) UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
+func (ar *repository) UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchiseAccount
 	var table = constants.DB.Table_Franchise_Accounts
 
@@ -325,61 +345,38 @@ func (ar *repository) UpdateFranchiseAccount(ctx context.Context, id string, acc
 		return nil, err
 	}
 
-	// Fields to update
-	data := map[string]any{
-		"name":       account.Name,
-		"email":      account.Email,
-		"mobile_no":  account.MobileNo,
-		"role":       account.RoleID,
-		"status":     account.Status,
-		"updated_at": account.UpdatedAt,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
-
 	conditions := map[string]any{
-		"id": id,
+		constants.Acc.UUID: id,
 	}
 
-	// Whitelist for safe updating
+	// Whitelist for safe inserting
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.Acc.UUID, constants.Acc.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
-		},
-		Returning: []string{
-			"id", "franchise_id", "employee_id", "account_type", "name", "mobile_no",
-			"email", "role", "status", "created_at", "updated_at",
+			Columns: append(CFATC, constants.Acc.CreatedAt, constants.Acc.UpdatedAt),
 		},
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, CFATC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var updated model.FranchiseAccountResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&updated.ID,
-		&updated.FranchiseID,
-		&updated.EmployeeID,
-		&updated.AccountType,
-		&updated.Name,
-		&updated.MobileNo,
-		&updated.Email,
-		&updated.RoleName, // assuming role name is returned
-		&updated.Status,
-		&updated.CreatedAt,
-		&updated.UpdatedAt,
-	)
+	values, err := dbutils.MapValues(CFATC, account, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
+	copy(args[:len(COTC)], values)
+
+	var updated model.UpdateResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values, &updated)
 	if err != nil {
 		return nil, err
 	}
@@ -395,30 +392,25 @@ func (ar *repository) GetFranchiseAccountByID(ctx context.Context, id string) (*
 		return nil, err
 	}
 
-	columns := []string{
-		"id", "employee_id", "name", "email", "mobile_no", "status",
-		"franchise_id", "account_type", "created_at", "updated_at", "deleted_at",
-	}
-
 	conditions := map[string]any{
-		"id": id,
+		constants.Acc.UUID: id,
 	}
-
+	allColumns := append(CFATC, constants.Acc.UUID, constants.Acc.CreatedAt, constants.Acc.UpdatedAt)
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: allColumns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: allColumns,
 		},
-		Returning: columns,
 	}
 
 	// Build SELECT query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, allColumns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +450,7 @@ func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, id string) ([
 	joins := []dbutils.JoinClause{
 		{
 			Type:   "LEFT",
-			Schema: schema,
+			Schema: outlet_schema,
 			Table:  constants.DB.Table_Roles,
 			Alias:  "r",
 			On:     "fa.role = r.id",
@@ -477,14 +469,14 @@ func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, id string) ([
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table, constants.DB.Table_Roles},
 			Columns: columns,
 		},
 	}
 
 	// Build the join query
-	query, args, err := dbutils.BuildJoinSelectQuery(method, schema, table, "fa", columns, joins, conditions, opts)
+	query, args, err := dbutils.BuildJoinSelectQuery(method, outlet_schema, table, "fa", columns, joins, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -530,34 +522,26 @@ func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.Franc
 		return nil, err
 	}
 
-	columns := []string{
-		"franchise_id",
-		"document_type_id",
-		"document_url",
-		"uploaded_by",
-		"status",
-		"remark",
-	}
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{"id"},
+		Returning: []string{constants.F_doc.UUID, constants.F_doc.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: CFDTC,
 		},
 	}
 
 	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		CFDTC,
 		opts,
 	)
 	if err != nil {
@@ -573,7 +557,7 @@ func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.Franc
 	return account, nil
 }
 
-func (ar *repository) UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error) {
+func (ar *repository) UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchiseDocument
 	var table = constants.DB.Table_Franchise_documents
 
@@ -582,60 +566,45 @@ func (ar *repository) UpdateFranchiseDocument(ctx context.Context, id string, do
 	}
 
 	// Fields to update
-	data := map[string]any{
-		"franchise_id":     doc.FranchiseID,
-		"document_type_id": doc.DocumentTypeID,
-		"document_url":     doc.DocumentURL,
-		"uploaded_by":      doc.UploadedBy,
-		"status":           doc.Status,
-		"remark":           doc.Remark,
-		"verified_at":      doc.VerifiedAt,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
 
 	conditions := map[string]any{
-		"id": id,
+		constants.F_doc.UUID: id,
 	}
-
+	allColumns := append(CFDTC, constants.F_doc.UUID, constants.F_doc.UpdatedAt)
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.F_doc.UUID, constants.F_doc.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: allColumns,
 		},
-		Returning: append(columns, "uploaded_at"),
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, CFDTC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
+	values, err := dbutils.MapValues(CFDTC, doc, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
+	copy(args[:len(COTC)], values)
 
-	var updated model.FranchiseDocumentResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&updated.ID,
-		&updated.FranchiseID,
-		&updated.DocumentTypeID,
-		&updated.DocumentURL,
-		&updated.UploadedBy,
-		&updated.Status,
-		&updated.Remark,
-		&updated.VerifiedAt,
+	var updatedDoc model.UpdateResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
+		&updatedDoc,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &updated, nil
+	return &updatedDoc, nil
 }
 
 func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponseComplete, error) {
@@ -657,7 +626,7 @@ func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) (
 	joins := []dbutils.JoinClause{
 		{
 			Type:   "INNER",
-			Schema: schema,
+			Schema: outlet_schema,
 			Table:  table,
 			Alias:  "dt",
 			On:     "fd.document_type_id = dt.id",
@@ -676,7 +645,7 @@ func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) (
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
 			Columns: []string{"fd.id", "dt.name", "fd.document_url", "fd.uploaded_at"},
 		},
@@ -685,7 +654,7 @@ func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) (
 	// Build query using join-aware builder
 	query, args, err := dbutils.BuildJoinSelectQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
 		"fd",
 		columns,
@@ -725,53 +694,45 @@ func (ar *repository) AddFranchiseAddress(ctx context.Context, addr *model.Franc
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
-
-	columns := []string{
-		"franchise_id",
-		"address_line",
-		"city",
-		"state",
-		"country",
-		"pincode",
-		"latitude",
-		"longitude",
-		"is_verified",
-	}
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{"id"},
+		Returning: []string{constants.F_addr.UUID, constants.F_addr.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(CFAddrTC, constants.F_addr.UUID, constants.F_addr.CreatedAt),
 		},
 	}
 
 	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		CFAddrTC,
 		opts,
 	)
 	if err != nil {
 		return nil, err
 	}
+	values, err := dbutils.MapValuesDirect(addr, CFAddrTC, "json")
+	if err != nil {
+		return nil, err
+	}
 	// Scan result into response struct
 	var address = &model.AddResponse{}
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{addr.FranchiseID, addr.AddressLine, addr.City, addr.State, addr.Country, addr.Pincode, addr.Latitude, addr.Longitude, addr.IsVerified}, &address.ID)
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values, &address)
 	if err != nil {
 		return nil, err
 	}
 
 	return address, nil
 }
-func (ar *repository) UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error) {
+func (ar *repository) UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchiseAddress
 	var table = constants.DB.Table_Franchise_documents
 
@@ -779,64 +740,46 @@ func (ar *repository) UpdateFranchiseAddress(ctx context.Context, id string, add
 		return nil, err
 	}
 
-	data := map[string]any{
-		"franchise_id": addr.FranchiseID,
-		"address_line": addr.AddressLine,
-		"city":         addr.City,
-		"state":        addr.State,
-		"country":      addr.Country,
-		"pincode":      addr.Pincode,
-		"latitude":     addr.Latitude,
-		"longitude":    addr.Longitude,
-		"is_verified":  addr.IsVerified,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
-
 	conditions := map[string]any{
-		"id": id,
+		constants.F_addr.UUID: id,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.F_addr.UUID, constants.F_addr.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(CFAddrTC, constants.F_addr.UUID, constants.F_addr.UpdatedAt),
 		},
-		Returning: append(columns, "uploaded_at"),
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, CFAddrTC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var updated model.FranchiseAddressResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&updated.ID,
-		&updated.AddressLine,
-		&updated.City,
-		&updated.State,
-		&updated.Country,
-		&updated.Pincode,
-		&updated.Latitude,
-		&updated.Longitude,
-		&updated.IsVerified,
-		&updated.UpdatedAt,
+	values, err := dbutils.MapValuesDirect(addr, CFAddrTC, "json")
+	if err != nil {
+		return nil, err
+	}
+
+	copy(args[:len(CFAddrTC)], values)
+
+	var updatedAddr model.UpdateResponse
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
+		&updatedAddr,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &updated, nil
+	return &updatedAddr, nil
 }
+
 func (ar *repository) GetFranchiseAddressByID(ctx context.Context, id string) (*model.FranchiseAddressResponse, error) {
 	var method = constants.Methods.GetFranchiseAddressByID
 	var table = constants.DB.Table_Franchise_addresses
@@ -845,31 +788,28 @@ func (ar *repository) GetFranchiseAddressByID(ctx context.Context, id string) (*
 		return nil, err
 	}
 
-	columns := []string{
-		"id", "address_line", "city", "state", "country", "pincode",
-		"latitude", "longitude", "is_verified", "created_at", "updated_at",
-	}
+	allColumns := append(CFAddrTC, constants.F_addr.UUID, constants.F_addr.CreatedAt, constants.F_addr.UpdatedAt)
 
 	conditions := map[string]any{
-		"id": id,
+		constants.F_addr.UUID: id,
 	}
 
 	// Whitelist for security
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: columns,
+		Returning: allColumns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: allColumns,
 		},
 	}
 
 	// Build SELECT query
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, allColumns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -877,17 +817,7 @@ func (ar *repository) GetFranchiseAddressByID(ctx context.Context, id string) (*
 	// Scan result into response struct
 	var addr model.FranchiseAddressResponse
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&addr.ID,
-		&addr.AddressLine,
-		&addr.City,
-		&addr.State,
-		&addr.Country,
-		&addr.Pincode,
-		&addr.Latitude,
-		&addr.Longitude,
-		&addr.IsVerified,
-		&addr.CreatedAt,
-		&addr.UpdatedAt,
+		&addr,
 	)
 	if err != nil {
 		return nil, err
@@ -903,40 +833,39 @@ func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.Franchis
 		return nil, err
 	}
 
-	columns := []string{
-		"franchise_id",
-		"name",
-		"description",
-		"is_default",
-	}
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: []string{"id"},
+		Returning: []string{constants.F_role.UUID, constants.F_role.CreatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(CFRTC, constants.F_role.UUID, constants.F_role.CreatedAt),
 		},
 	}
 
 	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		CFRTC,
 		opts,
 	)
 	if err != nil {
 		return nil, err
 	}
+	values, err := dbutils.MapValuesDirect(role, COTC, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
 	// Scan result into response struct
 	var newRole = &model.AddResponse{}
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{role.FranchiseID, role.Name, role.Description, role.IsDefault}, &newRole.ID)
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values, &newRole)
 	if err != nil {
 		return nil, err
 	}
@@ -944,63 +873,52 @@ func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.Franchis
 	return newRole, nil
 }
 
-func (ar *repository) UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error) {
+func (ar *repository) UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.UpdateResponse, error) {
 	var method = constants.Methods.UpdateFranchiseRole
 	var table = constants.DB.Table_Roles
 
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
 		return nil, err
 	}
-
-	data := map[string]any{
-		"franchise_id": role.FranchiseID,
-		"name":         role.Name,
-		"description":  role.Description,
-		"is_default":   role.IsDefault,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
+	allColumns := append(CFRTC, constants.F_role.UUID, constants.F_role.CreatedAt, constants.F_role.UpdatedAt)
 
 	conditions := map[string]any{
-		"id": id,
+		constants.F_role.UUID: id,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: []string{constants.F_role.UUID, constants.F_role.UpdatedAt},
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: allColumns,
 		},
-		Returning: append(columns, "updated_at"),
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, CFRTC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
+	values, err := dbutils.MapValuesDirect(role, COTC, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
+	copy(args[:len(COTC)], values)
 
-	var updated model.FranchiseRoleResponse
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&updated.ID,
-		&updated.FranchiseID,
-		&updated.Name,
-		&updated.Description,
-		&updated.IsDefault,
-		&updated.CreatedAt,
-		&updated.UpdatedAt,
+	var updated = &model.UpdateResponse{}
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
+		&updated,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &updated, nil
+	return updated, nil
 }
 func (ar *repository) GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error) {
 	var method = constants.Methods.GetAllFranchiseRoles
@@ -1009,40 +927,33 @@ func (ar *repository) GetAllFranchiseRoles(ctx context.Context, id string) ([]mo
 		return nil, err
 	}
 
-	// Define columns with alias prefixes
-	columns := []string{
-		"franchise_id",
-		"name",
-		"description",
-		"is_default",
-		"created_at",
-		"updated_at",
-	}
-
 	// Conditions
 	conditions := map[string]any{
-		"franchise_id": id,
+		constants.F_role.FranchiseID: id,
 	}
+
+	allColumns := append(CFRTC, constants.F_role.UUID, constants.F_role.CreatedAt, constants.F_role.UpdatedAt)
 
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: allColumns,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: allColumns,
 		},
 	}
 
 	// Build query using join-aware builder
 	query, args, err := dbutils.BuildSelectQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		allColumns,
 		conditions,
 		opts,
 	)
@@ -1079,38 +990,39 @@ func (ar *repository) AddPermissionsToRole(ctx context.Context, pRole *model.Rol
 		return nil, err
 	}
 
-	columns := []string{
-		"role_id",
-		"permission_id",
-	}
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Returning: columns,
+		Returning: CRPTC,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: CRPTC,
 		},
 	}
 
-	// Build query using join-aware builder
 	query, err := dbutils.BuildInsertQuery(
 		method,
-		schema,
+		outlet_schema,
 		table,
-		columns,
+		CRPTC,
 		opts,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	values, err := dbutils.MapValuesDirect(pRole, COTC, "json")
+	if err != nil {
+		logger.Error("failed to map update values", err, nil)
+		return nil, err
+	}
 	// Scan result into response struct
 	var newPRole = &model.RoleToPermissions{}
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, []any{pRole.RoleID, pRole.PermissionID}, &newPRole.RoleID, &newPRole.PermissionID)
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values, &newPRole)
 	if err != nil {
 		return nil, err
 	}
@@ -1124,44 +1036,31 @@ func (ar *repository) UpdatePermissionsToRole(ctx context.Context, id string, pR
 		return nil, err
 	}
 
-	data := map[string]any{
-		"role_id":       pRole.RoleID,
-		"permission_id": pRole.PermissionID,
-	}
-
-	columns := make([]string, 0, len(data))
-	for col := range data {
-		columns = append(columns, col)
-	}
-
 	conditions := map[string]any{
-		"role_id": pRole.RoleID,
+		constants.F_Role_Per.RoleID: pRole.RoleID,
 	}
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
+		Returning: CRPTC,
 		Whilelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: CRPTC,
 		},
-		Returning: columns,
 	}
 
-	query, args, err := dbutils.BuildUpdateQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildUpdateQuery(method, outlet_schema, table, CRPTC, conditions, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	var updated model.RoleToPermissions
-	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&updated.RoleID,
-		&updated.PermissionID,
-	)
+	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args, &updated)
 	if err != nil {
 		return nil, err
 	}
@@ -1188,14 +1087,14 @@ func (ar *repository) GetAllPermissionsToRole(ctx context.Context, id string) ([
 			Tables  []string
 			Columns []string
 		}{
-			Schemas: []string{schema},
+			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
 			Columns: columns,
 		},
 		Returning: columns,
 	}
 
-	query, args, err := dbutils.BuildSelectQuery(method, schema, table, columns, conditions, opts)
+	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
 		return nil, err
 	}

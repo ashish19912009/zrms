@@ -12,6 +12,7 @@ type AppConfig struct {
 	Port              string `yaml:"port"`
 	JWTPrivateKeyPath string `yaml:"jwtPrivateKeyPath"`
 	JWTPublicKeyPath  string `yaml:"jwtPublicKeyPath"`
+	KeyID             string `yaml:"keyID"`
 }
 
 // LoadConfig reads the YAML config file and unmarshals it into a Config struct

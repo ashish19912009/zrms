@@ -13,6 +13,7 @@ type AuthClaims struct {
 	Name        string `json:"name"`
 	MobileNo    string `json:"mobile_no"`
 	Role        string `json:"role"`
+	TokenType   string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 

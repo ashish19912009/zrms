@@ -32,21 +32,21 @@ type AccountService interface {
 	GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
 	CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (bool, error)
 
-	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
-	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error)
+	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error)
+	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error)
 	GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
 	GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
 
 	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error)
-	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error)
+	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error)
 	GetAllFranchiseDocuments(ctx context.Context, id string) ([]model.FranchiseDocumentResponseComplete, error)
 
 	AddFranchiseAddress(ctx context.Context, addr *model.FranchiseAddress) (*model.AddResponse, error)
-	UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error)
+	UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.UpdateResponse, error)
 	GetFranchiseAddressByID(ctx context.Context, id string) (*model.FranchiseAddressResponse, error)
 
 	AddFranchiseRole(ctx context.Context, role *model.FranchiseRole) (*model.AddResponse, error)
-	UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error)
+	UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.UpdateResponse, error)
 	GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error)
 
 	AddPermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
@@ -119,19 +119,19 @@ func (aS *accountService) CheckIfOwnerExistsByAadharID(ctx context.Context, aadh
 	return true, nil
 }
 
-func (aS *accountService) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
+func (aS *accountService) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error) {
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateFranchiseAccounts(account); err != nil {
 		return nil, err
 	}
-	f_owner, err := aS.repo.CreateFranchiseAccount(ctx, account)
+	f_account, err := aS.repo.CreateFranchiseAccount(ctx, account)
 	if err != nil {
 		return nil, err
 	}
-	return f_owner, nil
+	return f_account, nil
 }
 
-func (aS *accountService) UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.FranchiseAccountResponse, error) {
+func (aS *accountService) UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error) {
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (aS *accountService) AddFranchiseDocument(ctx context.Context, doc *model.F
 	return f_doc, nil
 }
 
-func (aS *accountService) UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.FranchiseDocumentResponse, error) {
+func (aS *accountService) UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error) {
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ func (aS *accountService) AddFranchiseAddress(ctx context.Context, addr *model.F
 	}
 	return f_addr, nil
 }
-func (aS *accountService) UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.FranchiseAddressResponse, error) {
+func (aS *accountService) UpdateFranchiseAddress(ctx context.Context, id string, addr *model.FranchiseAddress) (*model.UpdateResponse, error) {
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err
@@ -332,7 +332,7 @@ func (aS *accountService) AddFranchiseRole(ctx context.Context, role *model.Fran
 	}
 	return f_role, nil
 }
-func (aS *accountService) UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.FranchiseRoleResponse, error) {
+func (aS *accountService) UpdateFranchiseRole(ctx context.Context, id string, role *model.FranchiseRole) (*model.UpdateResponse, error) {
 	// 💡 Run validations before calling repo
 	if err := validations.ValidateUUID(id); err != nil {
 		return nil, err

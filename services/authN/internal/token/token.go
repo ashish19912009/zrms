@@ -2,14 +2,13 @@ package token
 
 import (
 	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
+	"github.com/ashish19912009/zrms/services/authN/internal/jwtkeys"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
 	"github.com/ashish19912009/zrms/services/authN/internal/model"
 	"github.com/golang-jwt/jwt/v5"
@@ -31,57 +30,21 @@ type jwtManager struct {
 }
 
 func NewjwtManager(privateKeyPath, publicKeyPath string) (*jwtManager, error) {
-	privateKey, err := loadPrivateKeyFromFile(privateKeyPath)
+	keys, err := jwtkeys.LoadKeys(privateKeyPath, publicKeyPath)
 	if err != nil {
 		return nil, err
 	}
-
-	publicKey, err := loadPublicKeyFromFile(publicKeyPath)
-	if err != nil {
-		return nil, err
-	}
+	_ = keys.PublicKey
 	return &jwtManager{
 		issuer:     os.Getenv("JWT_ISSUER"),
 		audience:   os.Getenv("JWT_AUDIENCE"),
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		privateKey: keys.PrivateKey,
+		publicKey:  keys.PublicKey,
 	}, nil
 }
 
-func loadPrivateKeyFromFile(path string) (*rsa.PrivateKey, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key file: %w", err)
-	}
-	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
-		return nil, errors.New("invalid or missing PEM block for RSA private key")
-	}
-	privKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse RSA private key: %w", err)
-	}
-	return privKey, nil
-}
-
-func loadPublicKeyFromFile(path string) (*rsa.PublicKey, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "PUBLIC KEY" {
-		return nil, errors.New("invalid public key data")
-	}
-	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	rsaPub, ok := pub.(*rsa.PublicKey)
-	if !ok {
-		return nil, errors.New("not an RSA public key")
-	}
-	return rsaPub, nil
+func (jm *jwtManager) PublicKey() *rsa.PublicKey {
+	return jm.publicKey
 }
 
 // GenerateToken creates a new access token
@@ -98,6 +61,7 @@ func (j *jwtManager) GenerateAccessToken(employeeID, FranchiseID, accountID, mob
 		AccountType: accountType,
 		Name:        name,
 		MobileNo:    mobileNo,
+		TokenType:   "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			Subject:   accountID,
@@ -140,6 +104,7 @@ func (j *jwtManager) GenerateRefreshToken(accountID, accountType string, duratio
 
 	claims := model.AuthClaims{
 		AccountType: accountType,
+		TokenType:   "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			Subject:   accountID,
@@ -197,7 +162,7 @@ func (j *jwtManager) VerifyRefreshToken(tokenString string) (*model.AuthClaims, 
 	// Parse the refresh token with the expected signing method
 	token, err := jwt.ParseWithClaims(tokenString, &model.AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Check if the token's signing method is ECDSA (for ES256)
-		if token.Method != jwt.SigningMethodES256 {
+		if token.Method != jwt.SigningMethodRS256 {
 			return nil, errors.New(constants.ErrUnexpectedSigningMethod)
 		}
 		return j.publicKey, nil
