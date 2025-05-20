@@ -9,9 +9,10 @@ import (
 
 	"github.com/ashish19912009/zrms/services/authZ/internal/config"
 	"github.com/ashish19912009/zrms/services/authZ/internal/constants"
+	server "github.com/ashish19912009/zrms/services/authZ/internal/handler"
 	"github.com/ashish19912009/zrms/services/authZ/internal/logger"
+	"github.com/ashish19912009/zrms/services/authZ/internal/middleware"
 	"github.com/ashish19912009/zrms/services/authZ/internal/repository"
-	"github.com/ashish19912009/zrms/services/authZ/internal/server"
 	"github.com/ashish19912009/zrms/services/authZ/internal/service"
 	"github.com/ashish19912009/zrms/services/authZ/internal/store"
 	"github.com/joho/godotenv"
@@ -102,8 +103,16 @@ func main() {
 		log.Fatalf(constants.FailedToStartService, err)
 	}
 
+	// intercepter
+
+	interceptor, err := middleware.NewJWTInterceptor(os.Getenv("JWK_SERVER_URL"))
+	if err != nil {
+		logger.Fatal("failed to create JWT interceptor: %v", err, nil)
+	}
 	// Initialize gRPC server
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor.Unary()),
+	)
 
 	// Register the gRPC server with the AuthZ service
 	authzServer := server.NewAuthZServer(authzService)

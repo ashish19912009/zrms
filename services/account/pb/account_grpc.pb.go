@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: account.proto
+// source: proto/account.proto
 
 package pb
 
@@ -19,54 +19,77 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccountService_CreateFranchise_FullMethodName             = "/account.AccountService/CreateFranchise"
-	AccountService_UpdateFranchise_FullMethodName             = "/account.AccountService/UpdateFranchise"
-	AccountService_UpdateFranchiseStatus_FullMethodName       = "/account.AccountService/UpdateFranchiseStatus"
-	AccountService_DeleteFranchise_FullMethodName             = "/account.AccountService/DeleteFranchise"
-	AccountService_GetAllFranchises_FullMethodName            = "/account.AccountService/GetAllFranchises"
-	AccountService_GetFranchiseByID_FullMethodName            = "/account.AccountService/GetFranchiseByID"
-	AccountService_CreateFranchiseDocument_FullMethodName     = "/account.AccountService/CreateFranchiseDocument"
-	AccountService_GetFranchiseDocumentByID_FullMethodName    = "/account.AccountService/GetFranchiseDocumentByID"
-	AccountService_UpdateFranchiseDocumentByID_FullMethodName = "/account.AccountService/UpdateFranchiseDocumentByID"
-	AccountService_DeleteFranchiseDocumentByID_FullMethodName = "/account.AccountService/DeleteFranchiseDocumentByID"
-	AccountService_CreateFranchiseAddress_FullMethodName      = "/account.AccountService/CreateFranchiseAddress"
-	AccountService_GetFranchiseAddressByID_FullMethodName     = "/account.AccountService/GetFranchiseAddressByID"
-	AccountService_UpdateFranchiseAddressByID_FullMethodName  = "/account.AccountService/UpdateFranchiseAddressByID"
-	AccountService_CreateFranchiseOwner_FullMethodName        = "/account.AccountService/CreateFranchiseOwner"
-	AccountService_UpdateFranchiseOwnerByID_FullMethodName    = "/account.AccountService/UpdateFranchiseOwnerByID"
-	AccountService_GetFranchiseOwnerByID_FullMethodName       = "/account.AccountService/GetFranchiseOwnerByID"
-	AccountService_CreateFranchiseAccount_FullMethodName      = "/account.AccountService/CreateFranchiseAccount"
-	AccountService_GetFranchiseAccountByID_FullMethodName     = "/account.AccountService/GetFranchiseAccountByID"
-	AccountService_GetFranchiseAccounts_FullMethodName        = "/account.AccountService/GetFranchiseAccounts"
-	AccountService_UpdateFranchiseAccountByID_FullMethodName  = "/account.AccountService/UpdateFranchiseAccountByID"
-	AccountService_DeleteFranchiseAccountByID_FullMethodName  = "/account.AccountService/DeleteFranchiseAccountByID"
+	AccountService_CreateFranchise_FullMethodName              = "/account.AccountService/CreateFranchise"
+	AccountService_UpdateFranchise_FullMethodName              = "/account.AccountService/UpdateFranchise"
+	AccountService_UpdateFranchiseStatus_FullMethodName        = "/account.AccountService/UpdateFranchiseStatus"
+	AccountService_DeleteFranchise_FullMethodName              = "/account.AccountService/DeleteFranchise"
+	AccountService_GetAllFranchises_FullMethodName             = "/account.AccountService/GetAllFranchises"
+	AccountService_GetFranchiseByID_FullMethodName             = "/account.AccountService/GetFranchiseByID"
+	AccountService_GetFranchiseByBusinessName_FullMethodName   = "/account.AccountService/GetFranchiseByBusinessName"
+	AccountService_CreateFranchiseDocument_FullMethodName      = "/account.AccountService/CreateFranchiseDocument"
+	AccountService_GetFranchiseDocumentByID_FullMethodName     = "/account.AccountService/GetFranchiseDocumentByID"
+	AccountService_UpdateFranchiseDocumentByID_FullMethodName  = "/account.AccountService/UpdateFranchiseDocumentByID"
+	AccountService_DeleteFranchiseDocumentByID_FullMethodName  = "/account.AccountService/DeleteFranchiseDocumentByID"
+	AccountService_CreateFranchiseAddress_FullMethodName       = "/account.AccountService/CreateFranchiseAddress"
+	AccountService_GetFranchiseAddressByID_FullMethodName      = "/account.AccountService/GetFranchiseAddressByID"
+	AccountService_UpdateFranchiseAddressByID_FullMethodName   = "/account.AccountService/UpdateFranchiseAddressByID"
+	AccountService_CreateFranchiseOwner_FullMethodName         = "/account.AccountService/CreateFranchiseOwner"
+	AccountService_UpdateFranchiseOwnerByID_FullMethodName     = "/account.AccountService/UpdateFranchiseOwnerByID"
+	AccountService_GetFranchiseOwnerByID_FullMethodName        = "/account.AccountService/GetFranchiseOwnerByID"
+	AccountService_CheckIfOwnerExistsByAadharID_FullMethodName = "/account.AccountService/CheckIfOwnerExistsByAadharID"
+	AccountService_CreateFranchiseAccount_FullMethodName       = "/account.AccountService/CreateFranchiseAccount"
+	AccountService_GetFranchiseAccountByID_FullMethodName      = "/account.AccountService/GetFranchiseAccountByID"
+	AccountService_GetFranchiseAccounts_FullMethodName         = "/account.AccountService/GetFranchiseAccounts"
+	AccountService_UpdateFranchiseAccountByID_FullMethodName   = "/account.AccountService/UpdateFranchiseAccountByID"
+	AccountService_DeleteFranchiseAccountByID_FullMethodName   = "/account.AccountService/DeleteFranchiseAccountByID"
+	AccountService_CreateFranchiseRole_FullMethodName          = "/account.AccountService/CreateFranchiseRole"
+	AccountService_UpdateFranchiseRole_FullMethodName          = "/account.AccountService/UpdateFranchiseRole"
+	AccountService_GetAllFranchiseRoles_FullMethodName         = "/account.AccountService/GetAllFranchiseRoles"
+	AccountService_AddPermissionsToRole_FullMethodName         = "/account.AccountService/AddPermissionsToRole"
+	AccountService_UpdatePermissionsToRole_FullMethodName      = "/account.AccountService/UpdatePermissionsToRole"
+	AccountService_GetAllPermissionToRole_FullMethodName       = "/account.AccountService/GetAllPermissionToRole"
 )
 
 // AccountServiceClient is the client API for AccountService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccountServiceClient interface {
+	// Franchise RPC's
 	CreateFranchise(ctx context.Context, in *AddFranchiseRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	UpdateFranchise(ctx context.Context, in *UpdateFranchiseRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	UpdateFranchiseStatus(ctx context.Context, in *UpdateFranchiseStatusRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	DeleteFranchise(ctx context.Context, in *DeleteFranchiseRequest, opts ...grpc.CallOption) (*DeletedResponse, error)
 	GetAllFranchises(ctx context.Context, in *GetFranchisesRequest, opts ...grpc.CallOption) (*GetFranchisesResponse, error)
-	GetFranchiseByID(ctx context.Context, in *GetFranchiseByIDRequest, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error)
+	GetFranchiseByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error)
+	GetFranchiseByBusinessName(ctx context.Context, in *GetFranchiseByName, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error)
+	// Franchise Document RPC's
 	CreateFranchiseDocument(ctx context.Context, in *AddFranchiseDocumentRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	GetFranchiseDocumentByID(ctx context.Context, in *GetFranchiseDocumentRequest, opts ...grpc.CallOption) (*GetFranchiseDocumentResponse, error)
 	UpdateFranchiseDocumentByID(ctx context.Context, in *UpdateFranchiseDocumentRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	DeleteFranchiseDocumentByID(ctx context.Context, in *DeleteFranchiseDocumentRequest, opts ...grpc.CallOption) (*DeletedResponse, error)
+	// Franchise Address RPC's
 	CreateFranchiseAddress(ctx context.Context, in *AddFranchiseAddressRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	GetFranchiseAddressByID(ctx context.Context, in *GetFranchiseAddressRequest, opts ...grpc.CallOption) (*GetFranchiseAddressResponse, error)
 	UpdateFranchiseAddressByID(ctx context.Context, in *UpdateFranchiseAddressRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
+	// Franchise Owner RPC's
 	CreateFranchiseOwner(ctx context.Context, in *AddFranchiseOwnerRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	UpdateFranchiseOwnerByID(ctx context.Context, in *UpdateFranchiseOwnerRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	GetFranchiseOwnerByID(ctx context.Context, in *GetFranchiseOwnerRequest, opts ...grpc.CallOption) (*GetFranchiseOwnerResponse, error)
+	CheckIfOwnerExistsByAadharID(ctx context.Context, in *AadharNoRequest, opts ...grpc.CallOption) (*BoolResponse, error)
+	// Franchise Accounts RPC's
 	CreateFranchiseAccount(ctx context.Context, in *AddFranchiseAccountRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	GetFranchiseAccountByID(ctx context.Context, in *GetFranchiseAccountByIDRequest, opts ...grpc.CallOption) (*GetFranchiseAccountByIDResponse, error)
 	GetFranchiseAccounts(ctx context.Context, in *GetFranchiseAccountsRequest, opts ...grpc.CallOption) (*GetFranchiseAccountsResponse, error)
 	UpdateFranchiseAccountByID(ctx context.Context, in *UpdateFranchiseAccountRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	DeleteFranchiseAccountByID(ctx context.Context, in *DeleteFranchiseAccountRequest, opts ...grpc.CallOption) (*DeletedResponse, error)
+	// Franchise Role RPC's
+	CreateFranchiseRole(ctx context.Context, in *AddFranchiseRoleRequest, opts ...grpc.CallOption) (*AddResponse, error)
+	UpdateFranchiseRole(ctx context.Context, in *UpdateFranchiseRoleRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
+	GetAllFranchiseRoles(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*FranchiseRoleResponse, error)
+	// Franchise Role Permission RPC's
+	AddPermissionsToRole(ctx context.Context, in *AddRolePermission, opts ...grpc.CallOption) (*AddRolePermission, error)
+	UpdatePermissionsToRole(ctx context.Context, in *AddRolePermission, opts ...grpc.CallOption) (*AddRolePermission, error)
+	GetAllPermissionToRole(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetAllRolePermissionDetails, error)
 }
 
 type accountServiceClient struct {
@@ -127,10 +150,20 @@ func (c *accountServiceClient) GetAllFranchises(ctx context.Context, in *GetFran
 	return out, nil
 }
 
-func (c *accountServiceClient) GetFranchiseByID(ctx context.Context, in *GetFranchiseByIDRequest, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error) {
+func (c *accountServiceClient) GetFranchiseByID(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetFranchiseByIDResponse)
 	err := c.cc.Invoke(ctx, AccountService_GetFranchiseByID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) GetFranchiseByBusinessName(ctx context.Context, in *GetFranchiseByName, opts ...grpc.CallOption) (*GetFranchiseByIDResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFranchiseByIDResponse)
+	err := c.cc.Invoke(ctx, AccountService_GetFranchiseByBusinessName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +270,16 @@ func (c *accountServiceClient) GetFranchiseOwnerByID(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *accountServiceClient) CheckIfOwnerExistsByAadharID(ctx context.Context, in *AadharNoRequest, opts ...grpc.CallOption) (*BoolResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BoolResponse)
+	err := c.cc.Invoke(ctx, AccountService_CheckIfOwnerExistsByAadharID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *accountServiceClient) CreateFranchiseAccount(ctx context.Context, in *AddFranchiseAccountRequest, opts ...grpc.CallOption) (*AddResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddResponse)
@@ -287,31 +330,106 @@ func (c *accountServiceClient) DeleteFranchiseAccountByID(ctx context.Context, i
 	return out, nil
 }
 
+func (c *accountServiceClient) CreateFranchiseRole(ctx context.Context, in *AddFranchiseRoleRequest, opts ...grpc.CallOption) (*AddResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddResponse)
+	err := c.cc.Invoke(ctx, AccountService_CreateFranchiseRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) UpdateFranchiseRole(ctx context.Context, in *UpdateFranchiseRoleRequest, opts ...grpc.CallOption) (*UpdateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateResponse)
+	err := c.cc.Invoke(ctx, AccountService_UpdateFranchiseRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) GetAllFranchiseRoles(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*FranchiseRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FranchiseRoleResponse)
+	err := c.cc.Invoke(ctx, AccountService_GetAllFranchiseRoles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) AddPermissionsToRole(ctx context.Context, in *AddRolePermission, opts ...grpc.CallOption) (*AddRolePermission, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddRolePermission)
+	err := c.cc.Invoke(ctx, AccountService_AddPermissionsToRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) UpdatePermissionsToRole(ctx context.Context, in *AddRolePermission, opts ...grpc.CallOption) (*AddRolePermission, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddRolePermission)
+	err := c.cc.Invoke(ctx, AccountService_UpdatePermissionsToRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) GetAllPermissionToRole(ctx context.Context, in *GetByIDRequest, opts ...grpc.CallOption) (*GetAllRolePermissionDetails, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllRolePermissionDetails)
+	err := c.cc.Invoke(ctx, AccountService_GetAllPermissionToRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
 type AccountServiceServer interface {
+	// Franchise RPC's
 	CreateFranchise(context.Context, *AddFranchiseRequest) (*AddResponse, error)
 	UpdateFranchise(context.Context, *UpdateFranchiseRequest) (*UpdateResponse, error)
 	UpdateFranchiseStatus(context.Context, *UpdateFranchiseStatusRequest) (*UpdateResponse, error)
 	DeleteFranchise(context.Context, *DeleteFranchiseRequest) (*DeletedResponse, error)
 	GetAllFranchises(context.Context, *GetFranchisesRequest) (*GetFranchisesResponse, error)
-	GetFranchiseByID(context.Context, *GetFranchiseByIDRequest) (*GetFranchiseByIDResponse, error)
+	GetFranchiseByID(context.Context, *GetByIDRequest) (*GetFranchiseByIDResponse, error)
+	GetFranchiseByBusinessName(context.Context, *GetFranchiseByName) (*GetFranchiseByIDResponse, error)
+	// Franchise Document RPC's
 	CreateFranchiseDocument(context.Context, *AddFranchiseDocumentRequest) (*AddResponse, error)
 	GetFranchiseDocumentByID(context.Context, *GetFranchiseDocumentRequest) (*GetFranchiseDocumentResponse, error)
 	UpdateFranchiseDocumentByID(context.Context, *UpdateFranchiseDocumentRequest) (*UpdateResponse, error)
 	DeleteFranchiseDocumentByID(context.Context, *DeleteFranchiseDocumentRequest) (*DeletedResponse, error)
+	// Franchise Address RPC's
 	CreateFranchiseAddress(context.Context, *AddFranchiseAddressRequest) (*AddResponse, error)
 	GetFranchiseAddressByID(context.Context, *GetFranchiseAddressRequest) (*GetFranchiseAddressResponse, error)
 	UpdateFranchiseAddressByID(context.Context, *UpdateFranchiseAddressRequest) (*UpdateResponse, error)
+	// Franchise Owner RPC's
 	CreateFranchiseOwner(context.Context, *AddFranchiseOwnerRequest) (*AddResponse, error)
 	UpdateFranchiseOwnerByID(context.Context, *UpdateFranchiseOwnerRequest) (*UpdateResponse, error)
 	GetFranchiseOwnerByID(context.Context, *GetFranchiseOwnerRequest) (*GetFranchiseOwnerResponse, error)
+	CheckIfOwnerExistsByAadharID(context.Context, *AadharNoRequest) (*BoolResponse, error)
+	// Franchise Accounts RPC's
 	CreateFranchiseAccount(context.Context, *AddFranchiseAccountRequest) (*AddResponse, error)
 	GetFranchiseAccountByID(context.Context, *GetFranchiseAccountByIDRequest) (*GetFranchiseAccountByIDResponse, error)
 	GetFranchiseAccounts(context.Context, *GetFranchiseAccountsRequest) (*GetFranchiseAccountsResponse, error)
 	UpdateFranchiseAccountByID(context.Context, *UpdateFranchiseAccountRequest) (*UpdateResponse, error)
 	DeleteFranchiseAccountByID(context.Context, *DeleteFranchiseAccountRequest) (*DeletedResponse, error)
+	// Franchise Role RPC's
+	CreateFranchiseRole(context.Context, *AddFranchiseRoleRequest) (*AddResponse, error)
+	UpdateFranchiseRole(context.Context, *UpdateFranchiseRoleRequest) (*UpdateResponse, error)
+	GetAllFranchiseRoles(context.Context, *GetByIDRequest) (*FranchiseRoleResponse, error)
+	// Franchise Role Permission RPC's
+	AddPermissionsToRole(context.Context, *AddRolePermission) (*AddRolePermission, error)
+	UpdatePermissionsToRole(context.Context, *AddRolePermission) (*AddRolePermission, error)
+	GetAllPermissionToRole(context.Context, *GetByIDRequest) (*GetAllRolePermissionDetails, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -337,8 +455,11 @@ func (UnimplementedAccountServiceServer) DeleteFranchise(context.Context, *Delet
 func (UnimplementedAccountServiceServer) GetAllFranchises(context.Context, *GetFranchisesRequest) (*GetFranchisesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllFranchises not implemented")
 }
-func (UnimplementedAccountServiceServer) GetFranchiseByID(context.Context, *GetFranchiseByIDRequest) (*GetFranchiseByIDResponse, error) {
+func (UnimplementedAccountServiceServer) GetFranchiseByID(context.Context, *GetByIDRequest) (*GetFranchiseByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFranchiseByID not implemented")
+}
+func (UnimplementedAccountServiceServer) GetFranchiseByBusinessName(context.Context, *GetFranchiseByName) (*GetFranchiseByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFranchiseByBusinessName not implemented")
 }
 func (UnimplementedAccountServiceServer) CreateFranchiseDocument(context.Context, *AddFranchiseDocumentRequest) (*AddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateFranchiseDocument not implemented")
@@ -370,6 +491,9 @@ func (UnimplementedAccountServiceServer) UpdateFranchiseOwnerByID(context.Contex
 func (UnimplementedAccountServiceServer) GetFranchiseOwnerByID(context.Context, *GetFranchiseOwnerRequest) (*GetFranchiseOwnerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFranchiseOwnerByID not implemented")
 }
+func (UnimplementedAccountServiceServer) CheckIfOwnerExistsByAadharID(context.Context, *AadharNoRequest) (*BoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckIfOwnerExistsByAadharID not implemented")
+}
 func (UnimplementedAccountServiceServer) CreateFranchiseAccount(context.Context, *AddFranchiseAccountRequest) (*AddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateFranchiseAccount not implemented")
 }
@@ -384,6 +508,24 @@ func (UnimplementedAccountServiceServer) UpdateFranchiseAccountByID(context.Cont
 }
 func (UnimplementedAccountServiceServer) DeleteFranchiseAccountByID(context.Context, *DeleteFranchiseAccountRequest) (*DeletedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteFranchiseAccountByID not implemented")
+}
+func (UnimplementedAccountServiceServer) CreateFranchiseRole(context.Context, *AddFranchiseRoleRequest) (*AddResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateFranchiseRole not implemented")
+}
+func (UnimplementedAccountServiceServer) UpdateFranchiseRole(context.Context, *UpdateFranchiseRoleRequest) (*UpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFranchiseRole not implemented")
+}
+func (UnimplementedAccountServiceServer) GetAllFranchiseRoles(context.Context, *GetByIDRequest) (*FranchiseRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllFranchiseRoles not implemented")
+}
+func (UnimplementedAccountServiceServer) AddPermissionsToRole(context.Context, *AddRolePermission) (*AddRolePermission, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPermissionsToRole not implemented")
+}
+func (UnimplementedAccountServiceServer) UpdatePermissionsToRole(context.Context, *AddRolePermission) (*AddRolePermission, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePermissionsToRole not implemented")
+}
+func (UnimplementedAccountServiceServer) GetAllPermissionToRole(context.Context, *GetByIDRequest) (*GetAllRolePermissionDetails, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllPermissionToRole not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -497,7 +639,7 @@ func _AccountService_GetAllFranchises_Handler(srv interface{}, ctx context.Conte
 }
 
 func _AccountService_GetFranchiseByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFranchiseByIDRequest)
+	in := new(GetByIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -509,7 +651,25 @@ func _AccountService_GetFranchiseByID_Handler(srv interface{}, ctx context.Conte
 		FullMethod: AccountService_GetFranchiseByID_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccountServiceServer).GetFranchiseByID(ctx, req.(*GetFranchiseByIDRequest))
+		return srv.(AccountServiceServer).GetFranchiseByID(ctx, req.(*GetByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_GetFranchiseByBusinessName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFranchiseByName)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetFranchiseByBusinessName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetFranchiseByBusinessName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetFranchiseByBusinessName(ctx, req.(*GetFranchiseByName))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -694,6 +854,24 @@ func _AccountService_GetFranchiseOwnerByID_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_CheckIfOwnerExistsByAadharID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AadharNoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).CheckIfOwnerExistsByAadharID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_CheckIfOwnerExistsByAadharID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).CheckIfOwnerExistsByAadharID(ctx, req.(*AadharNoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AccountService_CreateFranchiseAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddFranchiseAccountRequest)
 	if err := dec(in); err != nil {
@@ -784,6 +962,114 @@ func _AccountService_DeleteFranchiseAccountByID_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_CreateFranchiseRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddFranchiseRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).CreateFranchiseRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_CreateFranchiseRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).CreateFranchiseRole(ctx, req.(*AddFranchiseRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_UpdateFranchiseRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateFranchiseRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).UpdateFranchiseRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_UpdateFranchiseRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).UpdateFranchiseRole(ctx, req.(*UpdateFranchiseRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_GetAllFranchiseRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetAllFranchiseRoles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetAllFranchiseRoles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetAllFranchiseRoles(ctx, req.(*GetByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_AddPermissionsToRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddRolePermission)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).AddPermissionsToRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_AddPermissionsToRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).AddPermissionsToRole(ctx, req.(*AddRolePermission))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_UpdatePermissionsToRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddRolePermission)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).UpdatePermissionsToRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_UpdatePermissionsToRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).UpdatePermissionsToRole(ctx, req.(*AddRolePermission))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_GetAllPermissionToRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetAllPermissionToRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetAllPermissionToRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetAllPermissionToRole(ctx, req.(*GetByIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -814,6 +1100,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetFranchiseByID",
 			Handler:    _AccountService_GetFranchiseByID_Handler,
+		},
+		{
+			MethodName: "GetFranchiseByBusinessName",
+			Handler:    _AccountService_GetFranchiseByBusinessName_Handler,
 		},
 		{
 			MethodName: "CreateFranchiseDocument",
@@ -856,6 +1146,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AccountService_GetFranchiseOwnerByID_Handler,
 		},
 		{
+			MethodName: "CheckIfOwnerExistsByAadharID",
+			Handler:    _AccountService_CheckIfOwnerExistsByAadharID_Handler,
+		},
+		{
 			MethodName: "CreateFranchiseAccount",
 			Handler:    _AccountService_CreateFranchiseAccount_Handler,
 		},
@@ -875,7 +1169,31 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteFranchiseAccountByID",
 			Handler:    _AccountService_DeleteFranchiseAccountByID_Handler,
 		},
+		{
+			MethodName: "CreateFranchiseRole",
+			Handler:    _AccountService_CreateFranchiseRole_Handler,
+		},
+		{
+			MethodName: "UpdateFranchiseRole",
+			Handler:    _AccountService_UpdateFranchiseRole_Handler,
+		},
+		{
+			MethodName: "GetAllFranchiseRoles",
+			Handler:    _AccountService_GetAllFranchiseRoles_Handler,
+		},
+		{
+			MethodName: "AddPermissionsToRole",
+			Handler:    _AccountService_AddPermissionsToRole_Handler,
+		},
+		{
+			MethodName: "UpdatePermissionsToRole",
+			Handler:    _AccountService_UpdatePermissionsToRole_Handler,
+		},
+		{
+			MethodName: "GetAllPermissionToRole",
+			Handler:    _AccountService_GetAllPermissionToRole_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "account.proto",
+	Metadata: "proto/account.proto",
 }

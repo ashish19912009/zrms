@@ -35,7 +35,7 @@ type AccountService interface {
 	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error)
 	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error)
 	GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
-	GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
+	GetAllFranchiseAccounts(ctx context.Context, franDetail *model.GetFranchisesRequest) ([]model.FranchiseAccountResponse, error)
 
 	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error)
 	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error)
@@ -50,7 +50,7 @@ type AccountService interface {
 	GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error)
 
 	AddPermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
-	UpdatePermissionsToRole(ctx context.Context, id string, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
+	UpdatePermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
 	GetAllPermissionsToRole(ctx context.Context, id string) ([]model.RoleToPermissionsComplete, error)
 }
 
@@ -157,18 +157,18 @@ func (aS *accountService) GetFranchiseAccountByID(ctx context.Context, id string
 	}
 	return f_account, nil
 }
-func (aS *accountService) GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error) {
-	if err := validations.ValidateUUID(id); err != nil {
+func (aS *accountService) GetAllFranchiseAccounts(ctx context.Context, fran *model.GetFranchisesRequest) ([]model.FranchiseAccountResponse, error) {
+	if err := validations.ValidateUUID(fran.FranchiseID); err != nil {
 		return nil, err
 	}
-	franchiseExist, err := aS.repo.GetFranchiseByID(ctx, id)
+	franchiseExist, err := aS.repo.GetFranchiseByID(ctx, fran.FranchiseID)
 	if err != nil {
 		return nil, err
 	}
 	if franchiseExist == nil {
 		return nil, errors.New("Frachise not found")
 	}
-	f_accounts, err := aS.repo.GetAllFranchiseAccounts(ctx, id)
+	f_accounts, err := aS.repo.GetAllFranchiseAccounts(ctx, fran)
 	if err != nil {
 		return nil, err
 	}
@@ -382,11 +382,8 @@ func (aS *accountService) AddPermissionsToRole(ctx context.Context, pRole *model
 	}
 	return p_role, nil
 }
-func (aS *accountService) UpdatePermissionsToRole(ctx context.Context, id string, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
+func (aS *accountService) UpdatePermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
 	// 💡 Run validations before calling repo
-	if err := validations.ValidateUUID(id); err != nil {
-		return nil, err
-	}
 	if err := validations.ValidateUUID(pRole.RoleID); err != nil {
 		return nil, err
 	}
@@ -394,7 +391,7 @@ func (aS *accountService) UpdatePermissionsToRole(ctx context.Context, id string
 		return nil, err
 	}
 
-	p_role, err := aS.repo.UpdatePermissionsToRole(ctx, id, pRole)
+	p_role, err := aS.repo.UpdatePermissionsToRole(ctx, pRole)
 	if err != nil {
 		return nil, err
 	}

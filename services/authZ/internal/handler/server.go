@@ -3,12 +3,14 @@ package server
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/ashish19912009/zrms/services/authZ/internal/constants"
 	"github.com/ashish19912009/zrms/services/authZ/internal/model"
 	"github.com/ashish19912009/zrms/services/authZ/internal/service"
 	"github.com/ashish19912009/zrms/services/authZ/internal/validations"
 	"github.com/ashish19912009/zrms/services/authZ/pb"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -31,6 +33,20 @@ func (s *AuthZServer) Register(grpcServer *grpc.Server) {
 
 // CheckAccess implements the CheckAccess RPC
 func (s *AuthZServer) CheckAccess(ctx context.Context, req *pb.CheckAccessRequest) (*pb.CheckAccessResponse, error) {
+	token := ctx.Value("user").(jwt.Token)
+	role, _ := token.Get("account_type")
+	if role == "superAdmin" || role == "SuperAdmin" || role == "super_admin" || role == "superadmin" {
+		decison := &pb.Decision{
+			Allowed:       true,
+			Reason:        "Super Admin",
+			IssuedAt:      time.Now().Unix(),
+			ExpiresAt:     24 * time.Now().Unix(),
+			PolicyVersion: "",
+		}
+		return &pb.CheckAccessResponse{
+			Decision: decison,
+		}, nil
+	}
 	aM, err := model.CheckAccessFromPbToModel(req)
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ashish19912009/zrms/services/authN/internal/config"
 	"github.com/ashish19912009/zrms/services/authN/internal/constants"
 	"github.com/ashish19912009/zrms/services/authN/internal/jwtkeys"
 	"github.com/ashish19912009/zrms/services/authN/internal/logger"
@@ -27,9 +28,12 @@ type jwtManager struct {
 	publicKey  *rsa.PublicKey
 	issuer     string
 	audience   string
+	alg        string
+	typ        string
+	kid        string
 }
 
-func NewjwtManager(privateKeyPath, publicKeyPath string) (*jwtManager, error) {
+func NewjwtManager(privateKeyPath, publicKeyPath string, jwtHeader config.JWTHeaderConfig) (*jwtManager, error) {
 	keys, err := jwtkeys.LoadKeys(privateKeyPath, publicKeyPath)
 	if err != nil {
 		return nil, err
@@ -40,6 +44,9 @@ func NewjwtManager(privateKeyPath, publicKeyPath string) (*jwtManager, error) {
 		audience:   os.Getenv("JWT_AUDIENCE"),
 		privateKey: keys.PrivateKey,
 		publicKey:  keys.PublicKey,
+		alg:        jwtHeader.Alg,
+		typ:        jwtHeader.Typ,
+		kid:        jwtHeader.Kid,
 	}, nil
 }
 
@@ -77,6 +84,9 @@ func (j *jwtManager) GenerateAccessToken(employeeID, FranchiseID, accountID, mob
 
 	go func() {
 		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+		token.Header["alg"] = j.alg
+		token.Header["typ"] = j.typ
+		token.Header["kid"] = j.kid
 		signedToken, err := token.SignedString(j.privateKey)
 		if err != nil {
 			errChan <- err

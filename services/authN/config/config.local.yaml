@@ -3,7 +3,12 @@ port: "50051"
 
 jwtPrivateKeyPath: "../../certs/private_key.pem"
 jwtPublicKeyPath: "../../certs/public_key.pem"
-keyID: "zrms-authN-2025-key-tHe-GOAT-gO@L"
+
+jwtHeader:
+  alg: "RS256"
+  typ: "JWT"
+  keyID: "zrms-authN-2025-key-tHe-GOAT-gO@L"
+
 
 type: "lightning"  # Uses Lightning by default
 

@@ -46,7 +46,15 @@ func ConvertStringMapToJson(themeSettingsMap map[string]interface{}) ([]byte, er
 	return themeSettingsJSON, nil
 }
 
-func ExecuteAndScanRow(ctx context.Context, methodName string, db *sql.DB, query string, args []any, destStruct any, returningCols ...string) error {
+func ExecuteAndScanRow(
+	ctx context.Context,
+	methodName string,
+	db *sql.DB,
+	query string,
+	args []any,
+	destStruct any,
+	returningCols ...string,
+) error {
 	row := db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
@@ -54,19 +62,28 @@ func ExecuteAndScanRow(ctx context.Context, methodName string, db *sql.DB, query
 		return row.Err()
 	}
 
-	scanTargets, err := StructScanDestByTag(destStruct, returningCols, "json") // or "db"
+	// Get scan targets (now includes JSON-aware handling)
+	scanTargets, jsonFieldIndexes, err := StructScanDestWithJSON(destStruct, returningCols, "json")
 	if err != nil {
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
 		logger.Error("failed to map struct for scanning", err, logCtx)
 		return err
 	}
 
+	// Perform the initial scan
 	if err := row.Scan(scanTargets...); err != nil {
 		if err == sql.ErrNoRows {
 			return nil
 		}
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
 		logger.Error(constants.FailedToRetrv, err, logCtx)
+		return err
+	}
+
+	// Post-process JSON fields
+	if err := unmarshalJSONFields(destStruct, jsonFieldIndexes, scanTargets); err != nil {
+		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
+		logger.Error("failed to unmarshal JSON fields", err, logCtx)
 		return err
 	}
 
@@ -299,4 +316,102 @@ func MapValuesDirect(input any, columns []string, tag string) ([]any, error) {
 		values[i] = v.Field(fieldIndex).Interface()
 	}
 	return values, nil
+}
+
+// StructScanDestWithJSON prepares scan targets and tracks JSON fields
+func StructScanDestWithJSON(dest any, columns []string, tagName string) ([]any, map[int]reflect.StructField, error) {
+	destValue := reflect.ValueOf(dest)
+	if destValue.Kind() != reflect.Ptr || destValue.Elem().Kind() != reflect.Struct {
+		return nil, nil, fmt.Errorf("destination must be a pointer to struct")
+	}
+
+	destElem := destValue.Elem()
+	destType := destElem.Type()
+
+	scanTargets := make([]any, len(columns))
+	jsonFields := make(map[int]reflect.StructField)
+
+	for i, col := range columns {
+		fieldFound := false
+		for j := 0; j < destType.NumField(); j++ {
+			field := destType.Field(j)
+			tag := field.Tag.Get(tagName)
+			if tag == col {
+				fieldValue := destElem.Field(j)
+				// Check for JSON-compatible fields (map or *map)
+				if isJSONField(field.Type) {
+					var jsonData []byte
+					scanTargets[i] = &jsonData
+					jsonFields[i] = field
+				} else {
+					scanTargets[i] = fieldValue.Addr().Interface()
+				}
+				fieldFound = true
+				break
+			}
+		}
+		if !fieldFound {
+			return nil, nil, fmt.Errorf("no matching struct field for column: %s", col)
+		}
+	}
+
+	return scanTargets, jsonFields, nil
+}
+
+func isJSONField(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.Map:
+		return t.Key().Kind() == reflect.String
+	case reflect.Ptr:
+		return t.Elem().Kind() == reflect.Map && t.Elem().Key().Kind() == reflect.String
+	default:
+		return false
+	}
+}
+
+func unmarshalJSONFields(dest any, jsonFieldIndexes map[int]reflect.StructField, scanTargets []any) error {
+	destValue := reflect.ValueOf(dest).Elem()
+
+	for i, field := range jsonFieldIndexes {
+		jsonDataPtr, ok := scanTargets[i].(*[]byte)
+		if !ok {
+			return fmt.Errorf("expected *[]byte for JSON field %s", field.Name)
+		}
+
+		fieldValue := destValue.FieldByName(field.Name)
+		if !fieldValue.IsValid() {
+			return fmt.Errorf("no such field: %s", field.Name)
+		}
+
+		// Skip if NULL or empty
+		if len(*jsonDataPtr) == 0 {
+			continue
+		}
+
+		// Handle both map and *map
+		switch {
+		case fieldValue.Kind() == reflect.Map:
+			if fieldValue.IsNil() {
+				fieldValue.Set(reflect.MakeMap(field.Type))
+			}
+			target := fieldValue.Interface() // Non-pointer map
+			if err := json.Unmarshal(*jsonDataPtr, &target); err != nil {
+				return fmt.Errorf("failed to unmarshal JSON for field %s: %v", field.Name, err)
+			}
+
+		case fieldValue.Kind() == reflect.Ptr && fieldValue.Type().Elem().Kind() == reflect.Map:
+			if fieldValue.IsNil() {
+				fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
+				fieldValue.Elem().Set(reflect.MakeMap(fieldValue.Type().Elem()))
+			}
+			target := fieldValue.Interface() // Pointer to map
+			if err := json.Unmarshal(*jsonDataPtr, target); err != nil {
+				return fmt.Errorf("failed to unmarshal JSON for field %s: %v", field.Name, err)
+			}
+
+		default:
+			return fmt.Errorf("field %s is not a map or *map", field.Name)
+		}
+	}
+	return nil
 }

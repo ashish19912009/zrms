@@ -25,12 +25,6 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-// Config holds the YAML configuration
-// type AppConfig struct {
-// 	Env               string           `yaml:"env"`
-// 	Port              string           `yaml:"port"`
-// }
-
 var appEnv string
 
 func loadEnv() {
@@ -115,16 +109,15 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewTokenRepository(inMemoryStore)
-	tokenManger, err := token.NewjwtManager(cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath)
+	tokenManger, err := token.NewjwtManager(cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath, cfg.JWTHeader)
 	if err != nil {
 		log.Fatalf("failed to create JWT manager: %v", err)
 	}
 
 	// Initialize the JWK set using the manager's public key
-	if err := jwk.InitializeJWK(tokenManger.PublicKey(), cfg.KeyID); err != nil {
+	if err := jwk.InitializeJWK(tokenManger.PublicKey(), cfg.JWTHeader.Kid, cfg.JWTHeader.Alg, cfg.JWTHeader.Use); err != nil {
 		log.Fatalf("Failed to initialize JWK: %v", err)
 	}
-
 	// register grpc server
 	grpcServer := grpc.NewServer()
 

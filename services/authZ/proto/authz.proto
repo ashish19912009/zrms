@@ -10,7 +10,6 @@ option go_package = "./;pb";
  protoc --go_out=../pb --go-grpc_out=../pb authz.proto
 **/
 
-
 service AuthZService {
     rpc CheckAccess(CheckAccessRequest) returns (CheckAccessResponse);
     rpc BatchCheckAccess(BatchCheckAccessRequest) returns (BatchCheckAccessResponse);

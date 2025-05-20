@@ -78,7 +78,7 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Onr.UUID, constants.T_Onr.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -132,7 +132,7 @@ func (ar *admin_repository) UpdateNewOwner(ctx context.Context, owner *model.Fra
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Onr.UUID, constants.T_Onr.UpdatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -186,7 +186,7 @@ func (ar *admin_repository) CreateFranchise(ctx context.Context, fInput *model.F
 	// Insert into franchise table
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -239,9 +239,9 @@ func (ar *admin_repository) UpdateFranchise(ctx context.Context, franchise *mode
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 	}
-	opts.Whilelist.Schemas = []string{outlet_schema}
-	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, constants.T_Fran.UpdatedAt)
+	opts.Whitelist.Schemas = []string{outlet_schema}
+	opts.Whitelist.Tables = []string{table}
+	opts.Whitelist.Columns = append(columns, constants.T_Fran.UpdatedAt)
 
 	// Define the condition map for WHERE clause
 	conditions := map[string]any{
@@ -288,9 +288,9 @@ func (ar *admin_repository) UpdateFranchiseStatus(ctx context.Context, id string
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.UpdatedAt},
 	}
-	opts.Whilelist.Schemas = []string{outlet_schema}
-	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, constants.T_Fran.UUID)
+	opts.Whitelist.Schemas = []string{outlet_schema}
+	opts.Whitelist.Tables = []string{table}
+	opts.Whitelist.Columns = append(columns, constants.T_Fran.UUID)
 
 	// Generate the update query using the BuildUpdateQuery helper function
 	query, args, err := dbutils.BuildUpdateQuery(
@@ -333,9 +333,9 @@ func (ar *admin_repository) DeleteFranchise(ctx context.Context, id string) (*mo
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.T_Fran.UUID, constants.T_Fran.DeletedAt},
 	}
-	opts.Whilelist.Schemas = []string{outlet_schema}
-	opts.Whilelist.Tables = []string{table}
-	opts.Whilelist.Columns = append(columns, constants.T_Fran.UUID)
+	opts.Whitelist.Schemas = []string{outlet_schema}
+	opts.Whitelist.Tables = []string{table}
+	opts.Whitelist.Columns = append(columns, constants.T_Fran.UUID)
 
 	// Build the update query
 	query, args, err := dbutils.BuildUpdateQuery(
@@ -385,12 +385,12 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 
 	// Step 4: WHERE conditions
 	conditions := map[string]any{
-		constants.T_Fran.DeletedAt: nil, // soft delete filter
+		"deleted_at__null": true, // soft delete filter
 	}
 
 	// Step 5: Build query options with whitelist
 	opts := &dbutils.QueryBuilderOptions{
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string

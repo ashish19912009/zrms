@@ -101,3 +101,15 @@
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-12T20:37:45+05:30","message":"Starting authorization services"}
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-13T08:27:04+05:30","message":"Starting authorization services"}
 {"level":"info","service":"auth-service","env":"local","time":"2025-05-13T21:52:13+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T08:49:37+05:30","message":"Starting authorization services"}
+{"level":"fatal","service":"auth-service","error":"listen tcp 127.0.0.1:50052: bind: address already in use","time":"2025-05-17T08:49:37+05:30","message":"failed to listen: %v"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T08:50:04+05:30","message":"Starting authorization services"}
+{"level":"fatal","service":"auth-service","error":"failed to fetch \"\": Get \"\": unsupported protocol scheme \"\"","time":"2025-05-17T08:50:04+05:30","message":"failed to create JWT interceptor: %v"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T08:57:02+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T10:17:21+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T10:18:56+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-17T11:17:32+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-19T21:28:29+05:30","message":"Starting authorization services"}
+{"level":"fatal","service":"auth-service","error":"failed to fetch \"http://127.0.0.1:8080/.well-known/jwks.json\": Get \"http://127.0.0.1:8080/.well-known/jwks.json\": dial tcp 127.0.0.1:8080: connect: connection refused","time":"2025-05-19T21:28:29+05:30","message":"failed to create JWT interceptor: %v"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-19T21:29:25+05:30","message":"Starting authorization services"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-19T23:55:21+05:30","message":"Starting authorization services"}
