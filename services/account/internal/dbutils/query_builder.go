@@ -3,19 +3,27 @@ package dbutils
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 )
 
+type cachedQuery struct {
+	sql      string
+	args     []any
+	lastUsed time.Time
+}
+
 // QueryBuilderOptions holds optional settings for building queries.
 type QueryBuilderOptions struct {
 	Returning []string
-	Whilelist struct {
+	Whitelist struct {
 		Schemas []string
 		Tables  []string
 		Columns []string
 	}
+	AllowReturningAll bool // If true, allows RETURNING *
 }
 
 type JoinClause struct {
@@ -24,6 +32,13 @@ type JoinClause struct {
 	Table  string
 	Alias  string
 	On     string // e.g. "a.franchise_id = f.id"
+}
+
+// Pre-defined list of condition suffixes (optimized for extractColumnName)
+var conditionSuffixes = []string{
+	"__eq", "__ne", "__lt", "__lte", "__gt", "__gte",
+	"__in", "__nin", "__null", "__notnull",
+	"__like", "__ilike", "__between", "__exists", "__notexists",
 }
 
 // BuildSelectQuery dynamically constructs a parameterized SQL SELECT query string.
@@ -51,6 +66,11 @@ type JoinClause struct {
 //		map[string]any{"status": "active"},
 //		opts,
 //	)
+
+// Condition key suffix					Behavior					SQL Example
+// __null								IS NULL						"deleted_at" IS NULL
+// __notnull							IS NOT NULL					"approved_at" IS NOT NULL
+// (default)							Equals = $N					"id" = $1
 func BuildSelectQuery(methodName, schema, table string, columns []string, conditions map[string]any, opts *QueryBuilderOptions) (string, []any, error) {
 
 	logCtx := logger.BaseLogContext(
@@ -68,18 +88,18 @@ func BuildSelectQuery(methodName, schema, table string, columns []string, condit
 	}
 
 	if opts != nil {
-		if !contains(opts.Whilelist.Schemas, schema) {
+		if !contains(opts.Whitelist.Schemas, schema) {
 			err := fmt.Errorf(constants.UnauthorizedSchema, schema)
 			logger.Error(constants.BuildSelectQuery, err, logCtx)
 			return "", nil, err
 		}
-		if !contains(opts.Whilelist.Tables, table) {
+		if !contains(opts.Whitelist.Tables, table) {
 			err := fmt.Errorf(constants.UnauthorizedTable, table)
 			logger.Error(constants.BuildSelectQuery, err, logCtx)
 			return "", nil, err
 		}
 		for _, col := range columns {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				err := fmt.Errorf(constants.UnauthorizedCloumn, col)
 				logger.Error(constants.BuildSelectQuery, err, logCtx)
 				return "", nil, err
@@ -99,13 +119,25 @@ func BuildSelectQuery(methodName, schema, table string, columns []string, condit
 		whereClauses := []string{}
 		argIndex := 1
 		for key, val := range conditions {
-			if opts != nil && !contains(opts.Whilelist.Columns, key) {
+			if opts != nil && !contains(opts.Whitelist.Columns, stripConditionSuffix(key)) {
 				err := fmt.Errorf(constants.UnauthorizedConditionColumn, key)
 				logger.Error(constants.BuildSelectQuery, err, logCtx)
 			}
-			whereClauses = append(whereClauses, fmt.Sprintf(`"%s" = $%d`, key, argIndex))
-			args = append(args, val)
-			argIndex++
+
+			switch {
+			case strings.HasSuffix(key, "__null"):
+				col := stripConditionSuffix(key)
+				whereClauses = append(whereClauses, fmt.Sprintf(`"%s" IS NULL`, col))
+
+			case strings.HasSuffix(key, "__notnull"):
+				col := stripConditionSuffix(key)
+				whereClauses = append(whereClauses, fmt.Sprintf(`"%s" IS NOT NULL`, col))
+
+			default:
+				whereClauses = append(whereClauses, fmt.Sprintf(`"%s" = $%d`, key, argIndex))
+				args = append(args, val)
+				argIndex++
+			}
 		}
 		query += " WHERE " + strings.Join(whereClauses, " AND ")
 	}
@@ -151,18 +183,18 @@ func BuildInsertQuery(methodName, schema, table string, columns []string, opts *
 	}
 
 	if opts != nil {
-		if !contains(opts.Whilelist.Schemas, schema) {
+		if !contains(opts.Whitelist.Schemas, schema) {
 			err := fmt.Errorf(constants.UnauthorizedSchema, schema)
 			logger.Error(constants.BuildInsertQuery, err, logCtx)
 			return "", err
 		}
-		if !contains(opts.Whilelist.Tables, table) {
+		if !contains(opts.Whitelist.Tables, table) {
 			err := fmt.Errorf(constants.UnauthorizedTable, table)
 			logger.Error(constants.BuildInsertQuery, err, logCtx)
 			return "", err
 		}
 		for _, col := range columns {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				err := fmt.Errorf(constants.UnauthorizedCloumn, col)
 				logger.Error(constants.BuildInsertQuery, err, logCtx)
 				return "", err
@@ -170,7 +202,7 @@ func BuildInsertQuery(methodName, schema, table string, columns []string, opts *
 		}
 		if len(opts.Returning) > 0 {
 			for _, col := range opts.Returning {
-				if !contains(opts.Whilelist.Columns, col) {
+				if !contains(opts.Whitelist.Columns, col) {
 					err := fmt.Errorf(constants.UnauthorizedReturningColumn, col)
 					logger.Error(constants.BuildInsertQuery, err, logCtx)
 					return "", err
@@ -227,8 +259,12 @@ func BuildInsertQuery(methodName, schema, table string, columns []string, opts *
 //			opts,
 //			"UpdateUserByID",
 //		)
-func BuildUpdateQuery(methodName, schema, table string, columns []string, conditions map[string]any, opts *QueryBuilderOptions) (string, []any, error) {
-	// Initial log context with base details
+func BuildUpdateQuery(
+	methodName, schema, table string,
+	columns []string,
+	conditions map[string]any,
+	opts *QueryBuilderOptions,
+) (string, []any, error) {
 	logCtx := logger.BaseLogContext(
 		"layer", constants.Repository,
 		"method", methodName,
@@ -236,6 +272,7 @@ func BuildUpdateQuery(methodName, schema, table string, columns []string, condit
 		"table", table,
 		"columns", strings.Join(columns, ", "),
 	)
+
 	if len(columns) == 0 {
 		err := fmt.Errorf(constants.NoColumProvided)
 		logger.Error(constants.BuildUpdateQuery, err, logCtx)
@@ -244,32 +281,33 @@ func BuildUpdateQuery(methodName, schema, table string, columns []string, condit
 
 	// Whitelist validations
 	if opts != nil {
-		if !contains(opts.Whilelist.Schemas, schema) {
+		if !contains(opts.Whitelist.Schemas, schema) {
 			err := fmt.Errorf(constants.UnauthorizedSchema, schema)
 			logger.Error(constants.BuildUpdateQuery, err, logCtx)
 			return "", nil, err
 		}
-		if !contains(opts.Whilelist.Tables, table) {
+		if !contains(opts.Whitelist.Tables, table) {
 			err := fmt.Errorf(constants.UnauthorizedTable, table)
 			logger.Error(constants.BuildUpdateQuery, err, logCtx)
 			return "", nil, err
 		}
 		for _, col := range columns {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				err := fmt.Errorf(constants.UnauthorizedCloumn, col)
 				logger.Error(constants.BuildUpdateQuery, err, logCtx)
 				return "", nil, err
 			}
 		}
 		for condCol := range conditions {
-			if !contains(opts.Whilelist.Columns, condCol) {
+			baseCol := extractColumnName(condCol) // strip suffixes like __gte, etc
+			if !contains(opts.Whitelist.Columns, baseCol) {
 				err := fmt.Errorf(constants.UnauthorizedConditionColumn, condCol)
 				logger.Error(constants.BuildUpdateQuery, err, logCtx)
 				return "", nil, err
 			}
 		}
 		for _, col := range opts.Returning {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				err := fmt.Errorf(constants.UnauthorizedReturningColumn, col)
 				logger.Error(constants.BuildUpdateQuery, err, logCtx)
 				return "", nil, err
@@ -280,28 +318,32 @@ func BuildUpdateQuery(methodName, schema, table string, columns []string, condit
 	setClauses := make([]string, len(columns))
 	args := make([]any, 0, len(columns)+len(conditions))
 
-	// SET columns
+	// SET clause, placeholders start at $1
 	for i, col := range columns {
 		setClauses[i] = fmt.Sprintf(`"%s" = $%d`, col, i+1)
-		args = append(args, nil) // placeholder, to be set by caller
+		args = append(args, nil) // placeholder; caller fills actual value later
 	}
 
 	query := fmt.Sprintf(`UPDATE "%s"."%s" SET %s`, schema, table, strings.Join(setClauses, ", "))
 
-	// WHERE conditions
+	// WHERE clause
 	if len(conditions) > 0 {
 		whereClauses := []string{}
 		argIndex := len(columns) + 1
-		for key, val := range conditions {
-			whereClauses = append(whereClauses, fmt.Sprintf(`"%s" = $%d`, key, argIndex))
-			args = append(args, val)
-			argIndex++
+		for col, val := range conditions {
+			clause, clauseArgs, err := buildConditionClause(col, val, &argIndex)
+			if err != nil {
+				logger.Error(constants.BuildUpdateQuery, err, logCtx)
+				return "", nil, err
+			}
+			whereClauses = append(whereClauses, clause)
+			args = append(args, clauseArgs...)
 		}
 		query += " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
 	// RETURNING clause
-	if len(opts.Returning) > 0 {
+	if opts != nil && len(opts.Returning) > 0 {
 		returningCols := make([]string, len(opts.Returning))
 		for i, col := range opts.Returning {
 			returningCols[i] = fmt.Sprintf(`"%s"`, col)
@@ -335,12 +377,12 @@ func BuildDeleteQuery(schema, table string, conditions map[string]any, opts *Que
 
 	// Validate schema and table against whitelist
 	if opts != nil {
-		if !contains(opts.Whilelist.Schemas, schema) {
+		if !contains(opts.Whitelist.Schemas, schema) {
 			err := fmt.Errorf("unauthorized schema: %s", schema)
 			logger.Error(constants.BuildDeleteQuery, err, logCtx)
 			return "", nil, err
 		}
-		if !contains(opts.Whilelist.Tables, table) {
+		if !contains(opts.Whitelist.Tables, table) {
 			err := fmt.Errorf("unauthorized table: %s", table)
 			logger.Error(constants.BuildDeleteQuery, err, logCtx)
 			return "", nil, err
@@ -353,7 +395,7 @@ func BuildDeleteQuery(schema, table string, conditions map[string]any, opts *Que
 	argIndex := 1
 	for key, val := range conditions {
 		// Validate condition columns against whitelist
-		if opts != nil && !contains(opts.Whilelist.Columns, key) {
+		if opts != nil && !contains(opts.Whitelist.Columns, key) {
 			err := fmt.Errorf("unauthorized condition column: %s", key)
 			logger.Error(constants.BuildDeleteQuery, err, logCtx)
 			return "", nil, err
@@ -370,7 +412,7 @@ func BuildDeleteQuery(schema, table string, conditions map[string]any, opts *Que
 	if opts != nil && len(opts.Returning) > 0 {
 		returningCols := make([]string, len(opts.Returning))
 		for i, col := range opts.Returning {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				err := fmt.Errorf("unauthorized returning column: %s", col)
 				logger.Error(constants.BuildDeleteQuery, err, logCtx)
 				return "", nil, err
@@ -411,14 +453,14 @@ func BuildJoinSelectQuery(
 		return "", nil, err
 	}
 	if opts != nil {
-		if !contains(opts.Whilelist.Schemas, mainSchema) {
+		if !contains(opts.Whitelist.Schemas, mainSchema) {
 			return "", nil, fmt.Errorf(constants.UnauthorizedSchema, mainSchema)
 		}
-		if !contains(opts.Whilelist.Tables, mainTable) {
+		if !contains(opts.Whitelist.Tables, mainTable) {
 			return "", nil, fmt.Errorf(constants.UnauthorizedTable, mainTable)
 		}
 		for _, col := range columns {
-			if !contains(opts.Whilelist.Columns, col) {
+			if !contains(opts.Whitelist.Columns, col) {
 				return "", nil, fmt.Errorf(constants.UnauthorizedCloumn, col)
 			}
 		}
@@ -434,7 +476,7 @@ func BuildJoinSelectQuery(
 	// JOIN clauses
 	for _, join := range joins {
 		if opts != nil {
-			if !contains(opts.Whilelist.Tables, join.Table) || !contains(opts.Whilelist.Schemas, join.Schema) {
+			if !contains(opts.Whitelist.Tables, join.Table) || !contains(opts.Whitelist.Schemas, join.Schema) {
 				return "", nil, fmt.Errorf(constants.UnauthorizedJoinTable, join.Table)
 			}
 		}
@@ -473,4 +515,146 @@ func parseConditions(conditions map[string]any) string {
 		parts = append(parts, fmt.Sprintf("%s=%v", k, v))
 	}
 	return strings.Join(parts, ", ")
+}
+
+func stripConditionSuffix(key string) string {
+	key = strings.TrimSuffix(key, "__null")
+	key = strings.TrimSuffix(key, "__notnull")
+	return key
+}
+
+// buildConditionClause handles operators like __eq, __in, etc.
+func buildConditionClause(key string, value any, argIndex *int) (string, []any, error) {
+	for _, suffix := range conditionSuffixes {
+		if strings.HasSuffix(key, suffix) {
+			col := strings.TrimSuffix(key, suffix)
+			switch suffix {
+			case "__eq":
+				return fmt.Sprintf(`"%s" = $%d`, col, *argIndex), []any{value}, nil
+			case "__in":
+				vals, ok := value.([]any)
+				if !ok {
+					return "", nil, fmt.Errorf("value for IN must be a slice, got %T", value)
+				}
+				placeholders := make([]string, len(vals))
+				for i := range vals {
+					placeholders[i] = fmt.Sprintf("$%d", *argIndex+i)
+				}
+				*argIndex += len(vals)
+				return fmt.Sprintf(`"%s" IN (%s)`, col, strings.Join(placeholders, ", ")), vals, nil
+			case "__between":
+				vals, ok := value.([]any)
+				if !ok || len(vals) != 2 {
+					return "", nil, fmt.Errorf("value for BETWEEN must be [start, end], got %v", value)
+				}
+				clause := fmt.Sprintf(`"%s" BETWEEN $%d AND $%d`, col, *argIndex, *argIndex+1)
+				*argIndex += 2
+				return clause, vals, nil
+				// Add other cases (__lt, __like, etc.) similarly...
+			}
+		}
+	}
+	// Default: equality check
+	return fmt.Sprintf(`"%s" = $%d`, key, *argIndex), []any{value}, nil
+}
+
+// func buildConditionClause(key string, value any, argIndex *int) (string, []any, error) {
+
+// 	for _, suffix := range conditionSuffixes {
+// 		if strings.HasSuffix(key, suffix) {
+// 			col := strings.TrimSuffix(key, suffix)
+
+// 			switch suffix {
+// 			case "__eq":
+// 				return fmt.Sprintf(`"%s" = $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__ne":
+// 				return fmt.Sprintf(`"%s" != $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__lt":
+// 				return fmt.Sprintf(`"%s" < $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__lte":
+// 				return fmt.Sprintf(`"%s" <= $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__gt":
+// 				return fmt.Sprintf(`"%s" > $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__gte":
+// 				return fmt.Sprintf(`"%s" >= $%d`, col, *argIndex), []any{value}, advance(argIndex)
+
+// 			case "__in", "__nin":
+// 				v := reflect.ValueOf(value)
+// 				if v.Kind() != reflect.Slice {
+// 					return "", nil, fmt.Errorf("value for '%s' must be a slice", key)
+// 				}
+// 				if v.Len() == 0 {
+// 					return "", nil, fmt.Errorf("value for '%s' cannot be an empty slice", key)
+// 				}
+
+// 				placeholders := make([]string, v.Len())
+// 				args := make([]any, v.Len())
+// 				for i := 0; i < v.Len(); i++ {
+// 					placeholders[i] = fmt.Sprintf("$%d", *argIndex)
+// 					args[i] = v.Index(i).Interface()
+// 					*argIndex++
+// 				}
+
+// 				operator := "IN"
+// 				if suffix == "__nin" {
+// 					operator = "NOT IN"
+// 				}
+// 				return fmt.Sprintf(`"%s" %s (%s)`, col, operator, strings.Join(placeholders, ", ")), args, nil
+
+// 			case "__null":
+// 				return fmt.Sprintf(`"%s" IS NULL`, col), nil, nil
+// 			case "__notnull":
+// 				return fmt.Sprintf(`"%s" IS NOT NULL`, col), nil, nil
+
+// 			case "__like":
+// 				return fmt.Sprintf(`"%s" LIKE $%d`, col, *argIndex), []any{value}, advance(argIndex)
+// 			case "__ilike":
+// 				return fmt.Sprintf(`"%s" ILIKE $%d`, col, *argIndex), []any{value}, advance(argIndex)
+
+// 			case "__between":
+// 				v := reflect.ValueOf(value)
+// 				if v.Kind() != reflect.Slice || v.Len() != 2 {
+// 					return "", nil, fmt.Errorf("value for '%s' must be a 2-element slice", key)
+// 				}
+// 				arg1 := fmt.Sprintf("$%d", *argIndex)
+// 				val1 := v.Index(0).Interface()
+// 				*argIndex++
+// 				arg2 := fmt.Sprintf("$%d", *argIndex)
+// 				val2 := v.Index(1).Interface()
+// 				*argIndex++
+// 				return fmt.Sprintf(`"%s" BETWEEN %s AND %s`, col, arg1, arg2), []any{val1, val2}, nil
+
+// 			case "__exists", "__notexists":
+// 				query, ok := value.(string)
+// 				if !ok {
+// 					return "", nil, fmt.Errorf("value for '%s' must be a subquery string", key)
+// 				}
+// 				prefix := "EXISTS"
+// 				if suffix == "__notexists" {
+// 					prefix = "NOT EXISTS"
+// 				}
+// 				return fmt.Sprintf(`%s (%s)`, prefix, query), nil, nil
+// 			}
+// 		}
+// 	}
+
+// 	// default to __eq
+// 	clause := fmt.Sprintf(`"%s" = $%d`, key, *argIndex)
+// 	args := []any{value}
+// 	*argIndex++
+// 	return clause, args, nil
+// }
+
+func advance(argIndex *int) error {
+	*argIndex++
+	return nil
+}
+
+func extractColumnName(key string) string {
+	for _, suffix := range conditionSuffixes {
+		if strings.HasSuffix(key, suffix) {
+			return strings.TrimSuffix(key, suffix)
+		}
+	}
+	return key
 }

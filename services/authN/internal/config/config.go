@@ -7,12 +7,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type JWTHeaderConfig struct {
+	Alg string `yaml:"alg"`
+	Typ string `yaml:"typ"`
+	Kid string `yaml:"keyID"`
+	Use string `yaml:"use"`
+}
+
 type AppConfig struct {
-	Env               string `yaml:"env"`
-	Port              string `yaml:"port"`
-	JWTPrivateKeyPath string `yaml:"jwtPrivateKeyPath"`
-	JWTPublicKeyPath  string `yaml:"jwtPublicKeyPath"`
-	KeyID             string `yaml:"keyID"`
+	Env               string          `yaml:"env"`
+	Port              string          `yaml:"port"`
+	JWTPrivateKeyPath string          `yaml:"jwtPrivateKeyPath"`
+	JWTPublicKeyPath  string          `yaml:"jwtPublicKeyPath"`
+	JWTHeader         JWTHeaderConfig `yaml:"jwtHeader"`
 }
 
 // LoadConfig reads the YAML config file and unmarshals it into a Config struct

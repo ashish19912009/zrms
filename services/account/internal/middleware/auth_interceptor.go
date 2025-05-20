@@ -31,7 +31,7 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
-		claims, err := a.extractAndValidateToken(ctx)
+		claims, token, err := a.extractAndValidateToken(ctx)
 		if err != nil || claims == nil {
 			logger.Error("authentication failed", err, map[string]interface{}{
 				"layer":  "middleware",
@@ -66,6 +66,8 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 		if rPerm.Resource != perm.Resource || rPerm.Action != perm.Action {
 			return nil, fmt.Errorf("request RPC doesnot match, or permission or resource mismatch")
 		}
+		ctx = context.Background()
+		ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+token)
 		isAuthorized, err := a.authz_client.CheckAccess(ctx, claims.RegisteredClaims.Subject, claims.FranchiseID, rPerm.Resource, rPerm.Action)
 		if err != nil {
 			return nil, err
@@ -83,25 +85,25 @@ func (a *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (*model.AuthClaims, error) {
+func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (*model.AuthClaims, string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("missing metadata in context")
+		return nil, "", fmt.Errorf("missing metadata in context")
 	}
 
 	authHeader := helper.GetMetadataValue(md, "authorization", "Authorization")
 	if authHeader == "" {
-		return nil, fmt.Errorf("authorization header is missing")
+		return nil, "", fmt.Errorf("authorization header is missing")
 	}
 
 	parts := strings.Fields(authHeader)
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return nil, fmt.Errorf("invalid authorization header format")
+		return nil, "", fmt.Errorf("invalid authorization header format")
 	}
 
 	token := strings.TrimSpace(parts[1])
 	if token == "" {
-		return nil, fmt.Errorf("token is empty")
+		return nil, "", fmt.Errorf("token is empty")
 	}
 
 	authClaims, err := a.authn_client.VerifyToken(ctx, model.Token{Token: token})
@@ -109,10 +111,10 @@ func (a *AuthInterceptor) extractAndValidateToken(ctx context.Context) (*model.A
 		logger.Error("token verification failed", err, map[string]interface{}{
 			"token": "[redacted]", // Avoid logging the actual token in production
 		})
-		return nil, fmt.Errorf("failed to verify token: %w", err)
+		return nil, "", fmt.Errorf("failed to verify token: %w", err)
 	}
 
-	return authClaims, nil
+	return authClaims, token, nil
 }
 
 func (a *AuthInterceptor) extractAndValidatePermission(ctx context.Context) (*bool, *model.Permission, error) {

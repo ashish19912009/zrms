@@ -12,7 +12,7 @@ import (
 var jwkSet jwk.Set
 
 // InitializeJWK initializes the JWK Set from a given RSA public key
-func InitializeJWK(pubKey *rsa.PublicKey, keyID string) error {
+func InitializeJWK(pubKey *rsa.PublicKey, keyID, alg, use string) error {
 	if pubKey == nil {
 		return fmt.Errorf("nil public key provided")
 	}
@@ -23,6 +23,12 @@ func InitializeJWK(pubKey *rsa.PublicKey, keyID string) error {
 	}
 
 	if err := key.Set(jwk.KeyIDKey, keyID); err != nil {
+		return err
+	}
+	if err := key.Set(jwk.AlgorithmKey, alg); err != nil { // 👈 Set algorithm
+		return err
+	}
+	if err := key.Set(jwk.KeyUsageKey, use); err != nil { // 👈 Set key usage
 		return err
 	}
 

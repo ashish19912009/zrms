@@ -2,6 +2,21 @@ package model
 
 import "time"
 
+type Pagination struct {
+	Page  int32
+	Limit int32
+}
+
+type GetPaginationQuery struct {
+	Pagination *Pagination
+	Query      string
+}
+
+type GetFranchisesRequest struct {
+	FranchiseID   string
+	GetPagination *GetPaginationQuery
+}
+
 type Franchise struct {
 	ID                 string `json:"id"`
 	BusinessName       string `json:"business_name"`
@@ -103,7 +118,7 @@ type FranchiseAddress struct {
 	Pincode     string `json:"pincode"`
 	Latitude    string `json:"latitude"`
 	Longitude   string `json:"longitude"`
-	IsVerified  string `json:"is_verified"`
+	IsVerified  bool   `json:"is_verified"`
 }
 
 type FranchiseAddressResponse struct {
@@ -142,7 +157,7 @@ type FranchiseOwnerResponse struct {
 	Email      string     `json:"email"`
 	Address    string     `json:"address"`
 	AadharNo   string     `json:"aadhar_no"`
-	IsVerified string     `json:"is_verified"`
+	IsVerified bool       `json:"is_verified"`
 	Status     string     `json:"status"`
 	CreatedAt  *time.Time `json:"created_at"`
 	UpdatedAt  *time.Time `json:"updated_at"`

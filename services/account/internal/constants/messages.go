@@ -15,6 +15,7 @@ var EnvVariable = struct {
 var Methods = struct {
 	CheckDBConn                  string
 	CreateFranchise              string
+	CreateFranchiseAddress       string
 	CreateOwner                  string
 	UpdateFranchise              string
 	UpdateFranchiseStatus        string
@@ -31,6 +32,7 @@ var Methods = struct {
 	UpdateFranchiseAccount       string
 	GetAccountByID               string
 	GetFranchiseAddressByID      string
+	CreateFranchiseRole          string
 	AddFranchiseAddress          string
 	UpdateFranchiseAddress       string
 	AddFranchiseRole             string
@@ -47,6 +49,7 @@ var Methods = struct {
 }{
 	CheckDBConn:                  "CheckDBConn",
 	CreateFranchise:              "CreateFranchise",
+	CreateFranchiseAddress:       "CreateFranchiseAddress",
 	CreateOwner:                  "CreateOwner",
 	UpdateFranchise:              "UpdateFranchise",
 	UpdateFranchiseStatus:        "UpdateFranchiseStatus",
@@ -76,6 +79,7 @@ var Methods = struct {
 	CheckIfOwnerExistsByAadharID: "CheckIfOwnerExistsByAadharID",
 	CreateNewOwner:               "CreateNewOwner",
 	UpdateOwner:                  "UpdateOwner",
+	CreateFranchiseRole:          "CreateFranchiseRole",
 }
 
 const (
@@ -116,6 +120,7 @@ const (
 	ValidationInvalidEmail       = "invalid email format"
 	ValidationMissingToken       = "authorization token is required"
 	ValidationInvalidRole        = "user role is invalid"
+	ValidationFailed             = "validation failed: %s"
 
 	// Database Messages
 	DBConnectionSuccess    = "connected to the database successfully"

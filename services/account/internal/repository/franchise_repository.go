@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
@@ -76,7 +78,7 @@ type Repository interface {
 	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error)
 	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error)
 	GetFranchiseAccountByID(ctx context.Context, id string) (*model.FranchiseAccountResponse, error)
-	GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error)
+	GetAllFranchiseAccounts(ctx context.Context, fran *model.GetFranchisesRequest) ([]model.FranchiseAccountResponse, error)
 
 	AddFranchiseDocument(ctx context.Context, doc *model.FranchiseDocument) (*model.AddResponse, error)
 	UpdateFranchiseDocument(ctx context.Context, id string, doc *model.FranchiseDocument) (*model.UpdateResponse, error)
@@ -91,7 +93,7 @@ type Repository interface {
 	GetAllFranchiseRoles(ctx context.Context, id string) ([]model.FranchiseRoleResponse, error)
 
 	AddPermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
-	UpdatePermissionsToRole(ctx context.Context, id string, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
+	UpdatePermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error)
 	GetAllPermissionsToRole(ctx context.Context, id string) ([]model.RoleToPermissionsComplete, error)
 }
 
@@ -115,21 +117,21 @@ func (ar *repository) GetFranchiseByID(ctx context.Context, id string) (*model.F
 
 	// Define the condition map for WHERE clause
 	conditions := map[string]any{
-		constants.T_Fran.UUID:      id,
-		constants.T_Fran.DeletedAt: nil, // Filter deleted records
+		"id":               id,
+		"deleted_at__null": true, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: columns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
 		}{
 			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Fran.DeletedAt),
 		},
 	}
 
@@ -138,16 +140,20 @@ func (ar *repository) GetFranchiseByID(ctx context.Context, id string) (*model.F
 	if err != nil {
 		return nil, err
 	}
-
 	// Execute query and scan the result into the model
-	var franchise model.FranchiseResponse
+	franchise := &model.FranchiseResponse{
+		ThemeSettings: make(map[string]interface{}),
+	}
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&franchise,
+		franchise,
 		opts.Returning...,
 	); err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("franchise not found")
+		}
+		return nil, fmt.Errorf("scan failed: %w", err)
 	}
-	return &franchise, nil
+	return franchise, nil
 }
 
 func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error) {
@@ -163,13 +169,13 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 	// Define the condition map for WHERE clause
 	conditions := map[string]any{
 		constants.T_Fran.BusinessName: b_name,
-		constants.T_Fran.DeletedAt:    nil, // Filter deleted records
+		"deleted_at__null":            true, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: columns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -186,14 +192,16 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 	}
 
 	// Execute query and scan the result into the model
-	var franchise model.FranchiseResponse
+	franchise := &model.FranchiseResponse{
+		ThemeSettings: make(map[string]interface{}),
+	}
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
 		&franchise,
 		opts.Returning...,
 	); err != nil {
 		return nil, err
 	}
-	return &franchise, nil
+	return franchise, nil
 }
 
 func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error) {
@@ -212,14 +220,14 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 
 	// Define the conditions for WHERE clause
 	conditions := map[string]any{
-		constants.T_Onr.UUID:       id,  // Use franchise_id for filtering
-		constants.T_Fran.DeletedAt: nil, // Filter deleted records
+		constants.T_Onr.UUID: id,   // Use franchise_id for filtering
+		"deleted_at__null":   true, // Filter deleted records
 	}
 
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: columns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -267,7 +275,7 @@ func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharNo
 	// Prepare query options (if any), you can add Returning or whitelist logic here
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: columns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -307,7 +315,7 @@ func (ar *repository) CreateFranchiseAccount(ctx context.Context, account *model
 	// Whitelist for safe inserting
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.Acc.UUID, constants.Acc.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -352,7 +360,7 @@ func (ar *repository) UpdateFranchiseAccount(ctx context.Context, id string, acc
 	// Whitelist for safe inserting
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.Acc.UUID, constants.Acc.UpdatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -398,7 +406,7 @@ func (ar *repository) GetFranchiseAccountByID(ctx context.Context, id string) (*
 	allColumns := append(CFATC, constants.Acc.UUID, constants.Acc.CreatedAt, constants.Acc.UpdatedAt)
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: allColumns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -424,7 +432,7 @@ func (ar *repository) GetFranchiseAccountByID(ctx context.Context, id string) (*
 	return &account, nil
 }
 
-func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, id string) ([]model.FranchiseAccountResponse, error) {
+func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, fran *model.GetFranchisesRequest) ([]model.FranchiseAccountResponse, error) {
 	var method = constants.Methods.GetAllFranchiseAccounts
 	var table = constants.DB.Table_Franchise_Accounts
 
@@ -459,12 +467,18 @@ func (ar *repository) GetAllFranchiseAccounts(ctx context.Context, id string) ([
 
 	// WHERE conditions
 	conditions := map[string]any{
-		"fa.franchise_id": id,
+		"fa.franchise_id": fran.FranchiseID,
 	}
-
+	// Add query filter if provided
+	if fran.GetPagination != nil && fran.GetPagination.Query != "" {
+		conditions["search"] = map[string]string{
+			"columns": "fa.name, fa.email, fa.mobile_no, fa.account_type, fa.role_id", // searchable columns
+			"value":   fran.GetPagination.Query,
+		}
+	}
 	// Whitelist for security
 	opts := &dbutils.QueryBuilderOptions{
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -525,7 +539,7 @@ func (ar *repository) AddFranchiseDocument(ctx context.Context, doc *model.Franc
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_doc.UUID, constants.F_doc.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -574,7 +588,7 @@ func (ar *repository) UpdateFranchiseDocument(ctx context.Context, id string, do
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_doc.UUID, constants.F_doc.UpdatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -640,7 +654,7 @@ func (ar *repository) GetAllFranchiseDocuments(ctx context.Context, id string) (
 
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -697,7 +711,7 @@ func (ar *repository) AddFranchiseAddress(ctx context.Context, addr *model.Franc
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_addr.UUID, constants.F_addr.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -747,7 +761,7 @@ func (ar *repository) UpdateFranchiseAddress(ctx context.Context, id string, add
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_addr.UUID, constants.F_addr.UpdatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -797,7 +811,7 @@ func (ar *repository) GetFranchiseAddressByID(ctx context.Context, id string) (*
 	// Whitelist for security
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: allColumns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -836,7 +850,7 @@ func (ar *repository) AddFranchiseRole(ctx context.Context, role *model.Franchis
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_role.UUID, constants.F_role.CreatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -889,7 +903,7 @@ func (ar *repository) UpdateFranchiseRole(ctx context.Context, id string, role *
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: []string{constants.F_role.UUID, constants.F_role.UpdatedAt},
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -937,7 +951,7 @@ func (ar *repository) GetAllFranchiseRoles(ctx context.Context, id string) ([]mo
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: allColumns,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -993,7 +1007,7 @@ func (ar *repository) AddPermissionsToRole(ctx context.Context, pRole *model.Rol
 	// Whitelist options
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: CRPTC,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -1028,7 +1042,7 @@ func (ar *repository) AddPermissionsToRole(ctx context.Context, pRole *model.Rol
 	}
 	return newPRole, nil
 }
-func (ar *repository) UpdatePermissionsToRole(ctx context.Context, id string, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
+func (ar *repository) UpdatePermissionsToRole(ctx context.Context, pRole *model.RoleToPermissions) (*model.RoleToPermissions, error) {
 	var method = constants.Methods.UpdatePermissionsToRole
 	var table = constants.DB.Table_Role_Permissions
 
@@ -1043,7 +1057,7 @@ func (ar *repository) UpdatePermissionsToRole(ctx context.Context, id string, pR
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
 		Returning: CRPTC,
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string
@@ -1082,7 +1096,7 @@ func (ar *repository) GetAllPermissionsToRole(ctx context.Context, id string) ([
 
 	// Whitelist for safe updating
 	opts := &dbutils.QueryBuilderOptions{
-		Whilelist: struct {
+		Whitelist: struct {
 			Schemas []string
 			Tables  []string
 			Columns []string

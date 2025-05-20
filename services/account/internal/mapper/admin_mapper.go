@@ -8,6 +8,7 @@ import (
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
 	"github.com/ashish19912009/zrms/services/account/internal/model"
 	"github.com/ashish19912009/zrms/services/account/pb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func AddFranchiseOwner_ProtoToModel(pbOwner *pb.FranchiseOwnerInput) (*model.FranchiseOwner, error) {
@@ -57,6 +58,43 @@ func DeleteFranchise_FromProtoToModel(id string, admin_id string) (*model.Delete
 	}, nil
 }
 
+func GetFranchiseByID_FromProtoToModel(id string) string {
+	return id
+}
+
+func GetFranchiseByID_ModelToProto(franc *model.FranchiseResponse) (*pb.GetFranchiseByIDResponse, error) {
+	if franc == nil {
+		return &pb.GetFranchiseByIDResponse{}, nil
+	}
+
+	// Ensure ThemeSettings is never nil
+	if franc.ThemeSettings == nil {
+		franc.ThemeSettings = make(map[string]interface{})
+	}
+
+	settingsStruct, err := structpb.NewStruct(franc.ThemeSettings)
+	if err != nil {
+		return nil, err
+	}
+	frachise := &pb.FranchiseInput{
+		BusinessName:     franc.BusinessName,
+		LogoUrl:          franc.LogoURL,
+		Subdomain:        franc.SubDomain,
+		ThemeSettings:    settingsStruct,
+		Status:           franc.Status,
+		FranchiseOwnerId: franc.Franchise_Owner_id,
+	}
+	frByID := &pb.FranchiseByIDInput{
+		Id:               franc.ID,
+		FranchiseDetails: frachise,
+		CreatedAt:        franc.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        franc.UpdatedAt.Format(time.RFC3339),
+	}
+	return &pb.GetFranchiseByIDResponse{
+		Franchise: frByID,
+	}, nil
+}
+
 func AddFranchise_ProtoToModel(pbFranchise *pb.AddFranchiseRequest) (*model.Franchise, error) {
 	frach := pbFranchise.GetFranchiseDetails()
 	jsonBytes, err := dbutils.ConvertStringMapToJson(frach.ThemeSettings.AsMap())
@@ -71,6 +109,39 @@ func AddFranchise_ProtoToModel(pbFranchise *pb.AddFranchiseRequest) (*model.Fran
 		Status:             frach.Status,
 		Franchise_Owner_id: frach.FranchiseOwnerId,
 	}, nil
+}
+
+func FranchiseOwner_ModelToProto(res *model.FranchiseOwnerResponse) *pb.GetFranchiseOwnerResponse {
+	if res == nil {
+		return nil
+	}
+
+	fOwner := &pb.FranchiseOwnerInput{
+		Name:       res.Name,
+		Gender:     res.Gender,
+		Dob:        res.Dob,
+		MobileNo:   res.MobileNo,
+		Email:      res.Email,
+		Address:    res.Address,
+		AadharNo:   res.AadharNo,
+		IsVerified: res.IsVerified,
+		Status:     res.Status,
+	}
+
+	var createdAtStr, updatedAtStr string
+	if res.CreatedAt != nil {
+		createdAtStr = res.CreatedAt.Format(time.RFC3339)
+	}
+	if res.UpdatedAt != nil {
+		updatedAtStr = res.UpdatedAt.Format(time.RFC3339)
+	}
+
+	return &pb.GetFranchiseOwnerResponse{
+		Id:        res.ID,
+		FOwner:    fOwner,
+		CreatedAt: createdAtStr,
+		UpdatedAt: updatedAtStr,
+	}
 }
 
 func UpdateFranchise_ProtoToModel(pbFranchise *pb.UpdateFranchiseRequest) (*model.Franchise, error) {

@@ -8,7 +8,7 @@ option go_package=  "./pb";
 
 /**
  export PATH="$PATH:$(go env GOPATH)/bin"
- protoc --go_out=../ --go-grpc_out=../ account.proto
+ protoc --go_out=./ --go-grpc_out=./ proto/account.proto
 **/
 
 // Common response after adding data
@@ -39,11 +39,6 @@ message PaginationResponse {
     int32 limit = 2;
     int32 total = 3;
   }
-
-message Permission {
-    string Resource     = 1;
-    string Action       = 2;
-}
 
 // Message representing an Franchise in the system
 message FranchiseInput {
@@ -115,6 +110,14 @@ message AddFranchiseRequest {
     FranchiseInput franchise_details    = 1;
 }
 
+message AadharNoRequest{
+    string aadhar_no    = 1;
+}
+
+message BoolResponse{
+    bool exist          = 1;
+}
+
 message UpdateFranchiseRequest {
     string id                           = 1;
     FranchiseInput franchise_details    = 2;
@@ -123,7 +126,6 @@ message UpdateFranchiseRequest {
 message UpdateFranchiseStatusRequest{
     string id               = 1;
     string status           = 2;
-    Permission permission   = 3;
 }
 
 // -> Response
@@ -136,7 +138,6 @@ message AddFranchiseResponse {
 message DeleteFranchiseRequest {
     string id               = 1;
     string admin_id         = 2;
-    Permission permission   = 3;
 }
 
 message AddFranchiseDocumentRequest {
@@ -169,7 +170,6 @@ message UpdateFranchiseAddressRequest {
 
 message AddFranchiseOwnerRequest{
     FranchiseOwnerInput owner   = 1;
-    Permission permission       = 2;
 }
 
 message UpdateFranchiseOwnerRequest{
@@ -200,17 +200,17 @@ message DeleteFranchiseAccountRequest {
 }
 
 // GET
-message GetFranchiseByIDRequest {
+message GetByIDRequest {
     string id               = 1;
-    Permission permission   = 2;
+}
+
+message GetFranchiseByName {
+    string name             = 1;
 }
 
 //-> Response
 message GetFranchiseByIDResponse {
-    string id                       = 1;
-    FranchiseByIDInput franchise    = 2;
-    string created_at               = 3;
-    string updated_at               = 4; 
+    FranchiseByIDInput franchise    = 1;
 }
 
 message GetFranchiseCompleteDetailsRequest {
@@ -231,7 +231,6 @@ message GetFranchiseCompleteDetailsResponse {
 message GetFranchisesRequest {
     PaginationRequest pagination = 1;
     string query                 = 2;
-    Permission permission        = 3;
 }
 
 //-> Response
@@ -254,16 +253,14 @@ message GetFranchiseDocumentResponse {
 }
 
 message GetFranchiseOwnerRequest {
-    string id                       = 1;
-    string franchise_id             = 2;
+    string owner_id                 = 1;
 }
 
 message GetFranchiseOwnerResponse {
     string id                       = 1;
-    string franchise_id             = 2;
-    FranchiseOwnerInput f_owner     = 3;
-    string created_at               = 4;
-    string updated_at               = 5; 
+    FranchiseOwnerInput f_owner     = 2;
+    string created_at               = 3;
+    string updated_at               = 4; 
 }
 
 message GetFranchiseAddressRequest {
@@ -296,14 +293,54 @@ message GetFranchiseAccountByIDResponse {
 
 //GET
 message GetFranchiseAccountsRequest {
-    string franchise_id = 1;
-    PaginationRequest pagination = 2;
+    string franchise_id             = 1;
+    PaginationRequest pagination    = 2;
+    string query                    = 3;
 }
 
 //-> Response
 message GetFranchiseAccountsResponse {
-    repeated AccountInput accounts = 1;
-    PaginationResponse pagination = 2;
+    repeated GetFranchiseAccountByIDResponse accounts   = 1;
+    PaginationResponse pagination                       = 2;
+}
+
+message AddFranchiseRoleRequest {
+    string franchise_id     = 1;
+	string name             = 2;
+	string description      = 3;
+	bool is_default         = 4;
+}
+
+message UpdateFranchiseRoleRequest {
+    string id                       = 1;
+    AddFranchiseRoleRequest f_role  = 2;
+}
+
+message FranchiseRoleResponse{
+    string id                       = 1;
+    AddFranchiseRoleRequest f_role  = 2;
+    string created_at               = 3;
+    string updated_at               = 4;
+}
+
+message AddRolePermission {
+    string role_id          = 1;
+    string permission_id    = 2;
+}
+
+message RolePermissionDetails {
+    string franchise_id     = 1;
+    string role_name        = 2;
+    string role_desc        = 3;
+    string is_default       = 4;
+    string permission_key   = 5;
+    string permission_desc  = 6;
+    string created_at       = 7;
+    string updated_at       = 8;
+}
+
+message GetAllRolePermissionDetails {
+    repeated RolePermissionDetails roleP    = 1;
 }
 
 extend google.protobuf.MethodOptions {
@@ -312,6 +349,7 @@ extend google.protobuf.MethodOptions {
   }
 
 service AccountService {
+    // Franchise RPC's
     rpc CreateFranchise(AddFranchiseRequest)    returns (AddResponse){
         option (resource) = "franchise";
         option (action) = "create";
@@ -332,12 +370,16 @@ service AccountService {
         option (resource) = "franchise";
         option (action) = "viewAll";
     }
-    rpc GetFranchiseByID(GetFranchiseByIDRequest) returns(GetFranchiseByIDResponse){
+    rpc GetFranchiseByID(GetByIDRequest) returns(GetFranchiseByIDResponse){
+        option (resource) = "franchise";
+        option (action) = "view";
+    }
+    rpc GetFranchiseByBusinessName(GetFranchiseByName) returns(GetFranchiseByIDResponse){
         option (resource) = "franchise";
         option (action) = "view";
     }
 
-
+     // Franchise Document RPC's
     rpc CreateFranchiseDocument(AddFranchiseDocumentRequest) returns (AddResponse){
         option (resource) = "franchiseDocument";
         option (action) = "create";
@@ -355,6 +397,7 @@ service AccountService {
         option (action) = "delete";
     }
    
+     // Franchise Address RPC's
     rpc CreateFranchiseAddress(AddFranchiseAddressRequest) returns (AddResponse){
         option (resource) = "franchiseAddress";
         option (action) = "create";
@@ -368,7 +411,7 @@ service AccountService {
         option (action) = "update";
     }
 
-
+ // Franchise Owner RPC's
     rpc CreateFranchiseOwner(AddFranchiseOwnerRequest) returns (AddResponse){
         option (resource) = "franchiseOwner";
         option (action) = "create";
@@ -381,8 +424,12 @@ service AccountService {
         option (resource) = "franchiseOwner";
         option (action) = "view";
     }
+    rpc CheckIfOwnerExistsByAadharID(AadharNoRequest) returns (BoolResponse){
+        option (resource) = "franchiseOwner";
+        option (action) = "view";
+    }
 
-
+    // Franchise Accounts RPC's
     rpc CreateFranchiseAccount(AddFranchiseAccountRequest) returns (AddResponse){
         option (resource) = "franchiseAccount";
         option (action) = "create";
@@ -402,5 +449,33 @@ service AccountService {
     rpc DeleteFranchiseAccountByID(DeleteFranchiseAccountRequest) returns (DeletedResponse){
         option (resource) = "franchiseAccount";
         option (action) = "delete";
+    }
+
+    // Franchise Role RPC's
+    rpc CreateFranchiseRole(AddFranchiseRoleRequest) returns (AddResponse){
+        option (resource) = "franchiseRole";
+        option (action) = "create";
+    }
+    rpc UpdateFranchiseRole(UpdateFranchiseRoleRequest) returns (UpdateResponse){
+        option (resource) = "franchiseRole";
+        option (action) = "update";
+    }
+    rpc GetAllFranchiseRoles(GetByIDRequest) returns (FranchiseRoleResponse){
+        option (resource) = "franchiseRole";
+        option (action) = "view";
+    }
+
+    // Franchise Role Permission RPC's
+    rpc AddPermissionsToRole(AddRolePermission) returns (AddRolePermission){
+        option (resource) = "rolePermission";
+        option (action) = "create";
+    }
+    rpc UpdatePermissionsToRole(AddRolePermission) returns (AddRolePermission){
+        option (resource) = "rolePermission";
+        option (action) = "update";
+    }
+    rpc GetAllPermissionToRole(GetByIDRequest) returns(GetAllRolePermissionDetails) {
+        option (resource) = "rolePermission";
+        option (action) = "view";
     }
 }
