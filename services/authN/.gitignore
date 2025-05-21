@@ -1,1 +1,4 @@
 certs/private_key.pem
+log_report/authz_service.log
+env/
+config/

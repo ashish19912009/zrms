@@ -1466,3 +1466,6 @@
 {"level":"info","service":"auth-service","method":"Login","user_id":"bd0fcff7-c9cf-417f-9883-7431d73600b1_EMP003","time":"2025-05-21T00:28:38+05:30","message":"user logged in successfully"}
 {"level":"info","service":"auth-service","method":"ValidateToken","user":"EMP003","time":"2025-05-21T00:29:31+05:30","message":"token validated successfully"}
 {"level":"info","service":"auth-service","method":"ValidateToken","user":"EMP003","time":"2025-05-21T00:29:36+05:30","message":"token validated successfully"}
+{"level":"info","service":"auth-service","env":"local","time":"2025-05-21T20:18:27+05:30","message":"Starting authentication service"}
+{"level":"info","service":"auth-service","db":{},"time":"2025-05-21T20:18:27+05:30","message":"Store db"}
+{"level":"info","service":"auth-service","port":"8080","time":"2025-05-21T20:18:27+05:30","message":"Starting JWK HTTP server"}

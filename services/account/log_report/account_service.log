@@ -245,3 +245,4 @@
 {"level":"error","service":"account-service","error":"invalid authorization header format","method":"Unary","layer":"middleware","time":"2025-05-21T00:25:16+05:30","message":"authentication failed"}
 {"level":"error","service":"account-service","error":"invalid authorization header format","layer":"middleware","method":"Unary","time":"2025-05-21T00:25:50+05:30","message":"authentication failed"}
 {"level":"error","service":"account-service","error":"invalid authorization header format","layer":"middleware","method":"Unary","time":"2025-05-21T00:26:04+05:30","message":"authentication failed"}
+{"level":"info","service":"account-service","env":"local","time":"2025-05-21T20:18:57+05:30","message":"Starting account services"}
