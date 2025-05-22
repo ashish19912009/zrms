@@ -113,7 +113,7 @@ func (aS *accountService) CheckIfOwnerExistsByAadharID(ctx context.Context, aadh
 	if err != nil {
 		return false, err
 	}
-	if f_owner == nil {
+	if f_owner == true {
 		return false, nil
 	}
 	return true, nil

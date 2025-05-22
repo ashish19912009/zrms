@@ -45,13 +45,14 @@ func NewAdminService(admin_repo repository.AdminRepository, repo repository.Repo
 
 func (ad *adminService) CreateNewOwner(ctx context.Context, owner *model.FranchiseOwner) (*model.AddResponse, error) {
 	// check if owner already exists
-	ownerExist, err := ad.repo.CheckIfOwnerExistsByAadharID(ctx, owner.AadharNo)
-	if err != nil {
-		return nil, err
-	}
-	if ownerExist != nil {
-		return nil, errors.New(constants.FranchiseOwnerExist)
-	}
+	// ownerExist, err := ad.repo.CheckIfOwnerExistsByAadharID(ctx, owner.AadharNo)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if ownerExist == true {
+	// 	return nil, errors.New(constants.FranchiseOwnerExist)
+	// }
+	owner.ID = uuid.New().String()
 	newFranchiseOwner, err := ad.a_repo.CreateNewOwner(ctx, owner)
 	if err != nil {
 		return nil, err
@@ -86,8 +87,7 @@ func (ad *adminService) CreateFranchise(ctx context.Context, franchise *model.Fr
 		return nil, status.Error(codes.PermissionDenied, constants.BusinessAlreadyExist)
 	}
 	var newFranchise *model.AddResponse
-	uuid := uuid.New().String()
-	franchise.ID = uuid
+	franchise.ID = uuid.New().String()
 	newFranchise, err = ad.a_repo.CreateFranchise(ctx, franchise)
 	if err != nil {
 		return nil, err

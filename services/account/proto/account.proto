@@ -412,7 +412,7 @@ service AccountService {
     }
 
  // Franchise Owner RPC's
-    rpc CreateFranchiseOwner(AddFranchiseOwnerRequest) returns (AddResponse){
+    rpc CreateNewOwner(AddFranchiseOwnerRequest) returns (AddResponse){
         option (resource) = "franchiseOwner";
         option (action) = "create";
     }

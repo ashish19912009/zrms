@@ -17,7 +17,7 @@ var DB = struct {
 	Schema_Global:             "global",
 	Schema_Outlet:             "outlet",
 	Table_Franchise:           "franchises",
-	Table_Owner:               "owner",
+	Table_Owner:               "owners",
 	Table_Franchise_documents: "franchise_documents",
 	Table_Franchise_addresses: "franchise_addresses",
 

@@ -182,52 +182,52 @@ func ValidateFranchiseOwner(f_owner *model.FranchiseOwner) error {
 	}
 	// validate gender
 	if err := ValidateNotEmpty(gender); err != nil {
-		return err
+		return fmt.Errorf("gender can't be empty: %s", err)
 	}
 	if err := ValidateGenders(gender); err != nil {
-		return err
+		return fmt.Errorf("Invalid gender selected: %s", err)
 	}
 	// validate dob
-	if err := ValidateNotEmpty(dob); err != nil {
-		return err
+	if err := ValidateNotEmpty(dob.Format("2006-01-25")); err != nil {
+		return fmt.Errorf("Invalid franchise owner date of birth format: %s", err)
 	}
-	if err := ValidateDOB(dob); err != nil {
-		return err
+	if err := ValidateDOB(dob.Format("2006-01-25")); err != nil {
+		return fmt.Errorf("Invalid franchise owner date of birth format: %s", err)
 	}
 	// validate mobile no
 	if err := ValidateNotEmpty(mobile_no); err != nil {
-		return err
+		return fmt.Errorf("Invalid franchise owner date of birth format: %s", err)
 	}
-	if err := ValidateMobileNo(dob); err != nil {
-		return err
+	if err := ValidateMobileNo(mobile_no); err != nil {
+		return fmt.Errorf("Invalid franchise owner mobile number format: %s", err)
 	}
 	// validate email
 	if err := ValidateNotEmpty(email); err != nil {
 		return err
 	}
 	if err := ValidateEmail(email); err != nil {
-		return err
+		return fmt.Errorf("Invalid email of franchise owner format: %s", err)
 	}
 	// validate address
 	if err := ValidateNotEmpty(address); err != nil {
-		return err
+		return fmt.Errorf("Address of franchise owner is required: %s", err)
 	}
 	if err := ValidateLength(address, 5, 500); err != nil {
-		return err
+		return fmt.Errorf("Address of franchise owner exceeds maximum length: %s", err)
 	}
 	// validate aadhar
 	if err := ValidateNotEmpty(aadhar_no); err != nil {
-		return err
+		return fmt.Errorf("Aadhar number of franchise owner is required: %s", err)
 	}
 	if err := ValidateAadhaarNumber(aadhar_no); err != nil {
-		return err
+		return fmt.Errorf("Aadhar number of franchise owner is invalid: %s", err)
 	}
 	// validate status
 	if err := ValidateNotEmpty(status); err != nil {
-		return err
+		return fmt.Errorf("Franchise Owner Status can't be empty: %s", err)
 	}
 	if err := ValidateStatus(status); err != nil {
-		return err
+		return fmt.Errorf("Franchise Owner Status must be 'active' or 'inactive': %s", err)
 	}
 	return nil
 }
@@ -394,7 +394,7 @@ func ValidateGenders(gender string) error {
 func ValidateDOB(dobStr string) error {
 	// Define possible date formats
 	dateFormats := []string{
-		"2006-01-02", "02-01-2006", "01-02-2006", // YYYY-MM-DD, DD-MM-YYYY, MM-DD-YYYY
+		"2006-01-25", "02-01-2006", "01-02-2006", // YYYY-MM-DD, DD-MM-YYYY, MM-DD-YYYY
 		"02/01/2006", "01/02/2006", "2006/01/02", // DD/MM/YYYY, MM/DD/YYYY, YYYY/MM/DD
 		"02.01.2006", "01.02.2006", "2006.01.02", // DD.MM.YYYY, MM.DD.YYYY, YYYY.MM.DD
 	}
@@ -430,7 +430,7 @@ func ValidateDOB(dobStr string) error {
 	} else if age > 150 {
 		return errors.New(ErrDateUnrealistic.Error())
 	}
-	return errors.New("something wrong in date")
+	return nil
 }
 
 // ValidateAadhaarNumber validates the format and structure of an Aadhaar number (India)
@@ -454,7 +454,7 @@ func ValidateAadhaarNumber(aadhaar string) error {
 		return ErrAadhaarInvalidStart
 	}
 
-	if !isValidAadhaarLuhn(aadhaar) {
+	if !isValidAadhaarVerhoeff(aadhaar) {
 		return ErrAadhaarInvalidChecksum
 	}
 
@@ -462,25 +462,39 @@ func ValidateAadhaarNumber(aadhaar string) error {
 }
 
 // isValidAadhaarLuhn applies the Luhn algorithm to validate the Aadhaar number checksum
-func isValidAadhaarLuhn(aadhaar string) bool {
-	var sum int
-	shouldDouble := false
-
-	// Iterate over the digits from right to left
-	for i := len(aadhaar) - 1; i >= 0; i-- {
-		digit, _ := strconv.Atoi(string(aadhaar[i]))
-		if shouldDouble {
-			digit *= 2
-			if digit > 9 {
-				digit -= 9
-			}
+func isValidAadhaarVerhoeff(aadhaar string) bool {
+	var (
+		d = [10][10]int{
+			{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+			{1, 2, 3, 4, 0, 6, 7, 8, 9, 5},
+			{2, 3, 4, 0, 1, 7, 8, 9, 5, 6},
+			{3, 4, 0, 1, 2, 8, 9, 5, 6, 7},
+			{4, 0, 1, 2, 3, 9, 5, 6, 7, 8},
+			{5, 9, 8, 7, 6, 0, 4, 3, 2, 1},
+			{6, 5, 9, 8, 7, 1, 0, 4, 3, 2},
+			{7, 6, 5, 9, 8, 2, 1, 0, 4, 3},
+			{8, 7, 6, 5, 9, 3, 2, 1, 0, 4},
+			{9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
 		}
-		sum += digit
-		shouldDouble = !shouldDouble
-	}
+		p = [8][10]int{
+			{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+			{1, 5, 7, 6, 2, 8, 3, 0, 9, 4},
+			{5, 8, 0, 3, 7, 9, 6, 1, 4, 2},
+			{8, 9, 1, 6, 0, 4, 3, 5, 2, 7},
+			{9, 4, 5, 3, 1, 2, 6, 8, 7, 0},
+			{4, 2, 8, 6, 5, 7, 3, 9, 0, 1},
+			{2, 7, 9, 3, 8, 0, 6, 4, 1, 5},
+			{7, 0, 4, 6, 9, 1, 3, 2, 5, 8},
+		}
+	)
 
-	// The sum should be divisible by 10 for the number to be valid
-	return sum%10 == 0
+	c := 0
+	for i := len(aadhaar) - 1; i >= 0; i-- {
+		digit := int(aadhaar[i] - '0')
+		pos := len(aadhaar) - i - 1
+		c = d[c][p[pos%8][digit]]
+	}
+	return c == 0
 }
 
 // ValidateLength checks if the input string length is within the given range

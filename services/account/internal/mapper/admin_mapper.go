@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/dbutils"
@@ -12,15 +13,41 @@ import (
 )
 
 func AddFranchiseOwner_ProtoToModel(pbOwner *pb.FranchiseOwnerInput) (*model.FranchiseOwner, error) {
+	if pbOwner == nil {
+		return nil, fmt.Errorf("pbOwner is nil")
+	}
+
+	// Try parsing with different formats
+	var dobTime time.Time
+	var err error
+	formats := []string{
+		"2006-01-02",                // YYYY-MM-DD
+		"2006-01-02T15:04:05Z07:00", // RFC3339
+		"2006-01-02T15:04:05Z",      // RFC3339 without timezone
+		time.RFC3339,
+	}
+
+	for _, format := range formats {
+		dobTime, err = time.Parse(format, pbOwner.Dob)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid dob format: %w, input was: %s", err, pbOwner.Dob)
+	}
+
 	return &model.FranchiseOwner{
 		Name:       pbOwner.Name,
 		Gender:     pbOwner.Gender,
-		Dob:        pbOwner.Dob,
+		Dob:        dobTime,
 		MobileNo:   pbOwner.MobileNo,
 		Email:      pbOwner.Email,
 		Address:    pbOwner.Address,
 		AadharNo:   pbOwner.AadharNo,
 		IsVerified: pbOwner.IsVerified,
+		Status:     pbOwner.Status,
 	}, nil
 }
 

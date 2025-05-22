@@ -73,7 +73,7 @@ type Repository interface {
 	GetFranchiseByID(ctx context.Context, id string) (*model.FranchiseResponse, error)
 	GetFranchiseByBusinessName(ctx context.Context, b_name string) (*model.FranchiseResponse, error)
 	GetFranchiseOwnerByID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
-	CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (*model.FranchiseOwnerResponse, error)
+	CheckIfOwnerExistsByAadharID(ctx context.Context, id string) (bool, error)
 
 	CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error)
 	UpdateFranchiseAccount(ctx context.Context, id string, account *model.FranchiseAccount) (*model.UpdateResponse, error)
@@ -196,9 +196,12 @@ func (ar *repository) GetFranchiseByBusinessName(ctx context.Context, b_name str
 		ThemeSettings: make(map[string]interface{}),
 	}
 	if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&franchise,
+		franchise,
 		opts.Returning...,
 	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return franchise, nil
+		}
 		return nil, err
 	}
 	return franchise, nil
@@ -257,11 +260,11 @@ func (ar *repository) GetFranchiseOwnerByID(ctx context.Context, id string) (*mo
 	return &owner, nil
 }
 
-func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharNo string) (*model.FranchiseOwnerResponse, error) {
+func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharNo string) (bool, error) {
 	var method = constants.Methods.CheckIfOwnerExistsByAadharID
 	var table = constants.DB.Table_Owner
 	if err := dbutils.CheckDBConn(ar.db, method); err != nil {
-		return nil, err
+		return false, err
 	}
 
 	// Define the columns you need to retrieve
@@ -289,19 +292,21 @@ func (ar *repository) CheckIfOwnerExistsByAadharID(ctx context.Context, aadharNo
 	// Use BuildSelectQuery to build the query
 	query, args, err := dbutils.BuildSelectQuery(method, outlet_schema, table, columns, conditions, opts)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-
 	// Execute the query and scan the result into the model
-	var owner model.FranchiseOwnerResponse
+	owner := &model.FranchiseOwnerResponse{}
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args,
-		&owner,
+		owner,
 		opts.Returning...,
 	)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
 	}
-	return &owner, nil
+	return true, nil
 }
 
 func (ar *repository) CreateFranchiseAccount(ctx context.Context, account *model.FranchiseAccount) (*model.AddResponse, error) {

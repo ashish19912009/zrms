@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS outlet.owners (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     gender TEXT NOT NULL,
-    dob TIMESTAMPTZ NOT NULL,
+    dob Date NOT NULL,
     mobile_no TEXT,
     email TEXT,
     address TEXT,

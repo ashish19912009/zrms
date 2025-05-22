@@ -33,7 +33,7 @@ const (
 	AccountService_CreateFranchiseAddress_FullMethodName       = "/account.AccountService/CreateFranchiseAddress"
 	AccountService_GetFranchiseAddressByID_FullMethodName      = "/account.AccountService/GetFranchiseAddressByID"
 	AccountService_UpdateFranchiseAddressByID_FullMethodName   = "/account.AccountService/UpdateFranchiseAddressByID"
-	AccountService_CreateFranchiseOwner_FullMethodName         = "/account.AccountService/CreateFranchiseOwner"
+	AccountService_CreateNewOwner_FullMethodName               = "/account.AccountService/CreateNewOwner"
 	AccountService_UpdateFranchiseOwnerByID_FullMethodName     = "/account.AccountService/UpdateFranchiseOwnerByID"
 	AccountService_GetFranchiseOwnerByID_FullMethodName        = "/account.AccountService/GetFranchiseOwnerByID"
 	AccountService_CheckIfOwnerExistsByAadharID_FullMethodName = "/account.AccountService/CheckIfOwnerExistsByAadharID"
@@ -72,7 +72,7 @@ type AccountServiceClient interface {
 	GetFranchiseAddressByID(ctx context.Context, in *GetFranchiseAddressRequest, opts ...grpc.CallOption) (*GetFranchiseAddressResponse, error)
 	UpdateFranchiseAddressByID(ctx context.Context, in *UpdateFranchiseAddressRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	// Franchise Owner RPC's
-	CreateFranchiseOwner(ctx context.Context, in *AddFranchiseOwnerRequest, opts ...grpc.CallOption) (*AddResponse, error)
+	CreateNewOwner(ctx context.Context, in *AddFranchiseOwnerRequest, opts ...grpc.CallOption) (*AddResponse, error)
 	UpdateFranchiseOwnerByID(ctx context.Context, in *UpdateFranchiseOwnerRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	GetFranchiseOwnerByID(ctx context.Context, in *GetFranchiseOwnerRequest, opts ...grpc.CallOption) (*GetFranchiseOwnerResponse, error)
 	CheckIfOwnerExistsByAadharID(ctx context.Context, in *AadharNoRequest, opts ...grpc.CallOption) (*BoolResponse, error)
@@ -240,10 +240,10 @@ func (c *accountServiceClient) UpdateFranchiseAddressByID(ctx context.Context, i
 	return out, nil
 }
 
-func (c *accountServiceClient) CreateFranchiseOwner(ctx context.Context, in *AddFranchiseOwnerRequest, opts ...grpc.CallOption) (*AddResponse, error) {
+func (c *accountServiceClient) CreateNewOwner(ctx context.Context, in *AddFranchiseOwnerRequest, opts ...grpc.CallOption) (*AddResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddResponse)
-	err := c.cc.Invoke(ctx, AccountService_CreateFranchiseOwner_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AccountService_CreateNewOwner_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,7 @@ type AccountServiceServer interface {
 	GetFranchiseAddressByID(context.Context, *GetFranchiseAddressRequest) (*GetFranchiseAddressResponse, error)
 	UpdateFranchiseAddressByID(context.Context, *UpdateFranchiseAddressRequest) (*UpdateResponse, error)
 	// Franchise Owner RPC's
-	CreateFranchiseOwner(context.Context, *AddFranchiseOwnerRequest) (*AddResponse, error)
+	CreateNewOwner(context.Context, *AddFranchiseOwnerRequest) (*AddResponse, error)
 	UpdateFranchiseOwnerByID(context.Context, *UpdateFranchiseOwnerRequest) (*UpdateResponse, error)
 	GetFranchiseOwnerByID(context.Context, *GetFranchiseOwnerRequest) (*GetFranchiseOwnerResponse, error)
 	CheckIfOwnerExistsByAadharID(context.Context, *AadharNoRequest) (*BoolResponse, error)
@@ -482,8 +482,8 @@ func (UnimplementedAccountServiceServer) GetFranchiseAddressByID(context.Context
 func (UnimplementedAccountServiceServer) UpdateFranchiseAddressByID(context.Context, *UpdateFranchiseAddressRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateFranchiseAddressByID not implemented")
 }
-func (UnimplementedAccountServiceServer) CreateFranchiseOwner(context.Context, *AddFranchiseOwnerRequest) (*AddResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateFranchiseOwner not implemented")
+func (UnimplementedAccountServiceServer) CreateNewOwner(context.Context, *AddFranchiseOwnerRequest) (*AddResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateNewOwner not implemented")
 }
 func (UnimplementedAccountServiceServer) UpdateFranchiseOwnerByID(context.Context, *UpdateFranchiseOwnerRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateFranchiseOwnerByID not implemented")
@@ -800,20 +800,20 @@ func _AccountService_UpdateFranchiseAddressByID_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccountService_CreateFranchiseOwner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _AccountService_CreateNewOwner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddFranchiseOwnerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AccountServiceServer).CreateFranchiseOwner(ctx, in)
+		return srv.(AccountServiceServer).CreateNewOwner(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AccountService_CreateFranchiseOwner_FullMethodName,
+		FullMethod: AccountService_CreateNewOwner_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccountServiceServer).CreateFranchiseOwner(ctx, req.(*AddFranchiseOwnerRequest))
+		return srv.(AccountServiceServer).CreateNewOwner(ctx, req.(*AddFranchiseOwnerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1134,8 +1134,8 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AccountService_UpdateFranchiseAddressByID_Handler,
 		},
 		{
-			MethodName: "CreateFranchiseOwner",
-			Handler:    _AccountService_CreateFranchiseOwner_Handler,
+			MethodName: "CreateNewOwner",
+			Handler:    _AccountService_CreateNewOwner_Handler,
 		},
 		{
 			MethodName: "UpdateFranchiseOwnerByID",

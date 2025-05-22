@@ -16,6 +16,7 @@ type cachedQuery struct {
 }
 
 // QueryBuilderOptions holds optional settings for building queries.
+// QueryBuilderOptions holds optional settings for building queries.
 type QueryBuilderOptions struct {
 	Returning []string
 	Whitelist struct {
@@ -24,6 +25,9 @@ type QueryBuilderOptions struct {
 		Columns []string
 	}
 	AllowReturningAll bool // If true, allows RETURNING *
+	OrderBy           []string
+	Limit             int32
+	Offset            int32
 }
 
 type JoinClause struct {

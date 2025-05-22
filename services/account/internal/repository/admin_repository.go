@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
@@ -100,15 +99,16 @@ func (ar *admin_repository) CreateNewOwner(ctx context.Context, owner *model.Fra
 	if err != nil {
 		return nil, err
 	}
-
+	// Prepare and execute the query
 	values, err := dbutils.MapValuesDirect(owner, COTC, "json")
 	if err != nil {
 		return nil, err
 	}
 
-	var repsonse *model.AddResponse
+	repsonse := &model.AddResponse{}
 	err = dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, values,
-		&repsonse,
+		repsonse,
+		opts.Returning...,
 	)
 	if err != nil {
 		return nil, err
@@ -373,22 +373,14 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 	}
 
 	offset := (page - 1) * limit
-	columns := []string{
-		constants.T_Fran.UUID,
-		constants.T_Fran.BusinessName,
-		constants.T_Fran.LogoUrl,
-		constants.T_Fran.Subdomain,
-		constants.T_Fran.ThemeSettings,
-		constants.T_Fran.Status,
-		constants.T_Fran.FranchiseOwnerID,
-	}
+	columns := append(CFTC, constants.T_Fran.CreatedAt, constants.T_Fran.UpdatedAt)
 
-	// Step 4: WHERE conditions
+	// WHERE conditions
 	conditions := map[string]any{
 		"deleted_at__null": true, // soft delete filter
 	}
 
-	// Step 5: Build query options with whitelist
+	// Build query options with whitelist
 	opts := &dbutils.QueryBuilderOptions{
 		Whitelist: struct {
 			Schemas []string
@@ -397,11 +389,14 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 		}{
 			Schemas: []string{outlet_schema},
 			Tables:  []string{table},
-			Columns: columns,
+			Columns: append(columns, constants.T_Fran.DeletedAt),
 		},
+		OrderBy: []string{"created_at DESC"},
+		Limit:   limit,
+		Offset:  offset,
 	}
 
-	// Step 6: Build SELECT query using helper
+	// Build SELECT query using helper
 	query, args, err := dbutils.BuildSelectQuery(
 		method,
 		outlet_schema,
@@ -414,25 +409,19 @@ func (ar *admin_repository) GetAllFranchises(ctx context.Context, page int32, li
 		return nil, err
 	}
 
-	// Step 7: Append ORDER BY, LIMIT, OFFSET
-	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
-	args = append(args, limit, offset)
-
-	// Step 8: Execute the query
+	// Execute the query
 	rows, err := ar.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Step 9: Scan result rows
+	// Scan result rows
 	var franchises []model.FranchiseResponse
 	for rows.Next() {
 		var f model.FranchiseResponse
-		if err := rows.Scan(
-			&f.ID, &f.BusinessName, &f.LogoURL, &f.SubDomain,
-			&f.ThemeSettings, &f.Status, &f.CreatedAt,
-		); err != nil {
+		f.ThemeSettings = make(map[string]interface{})
+		if err := dbutils.ExecuteAndScanRow(ctx, method, ar.db, query, args, &f, columns...); err != nil {
 			logger.Error("Failed to scan GetAllFranchises row", err, nil)
 			return nil, err
 		}

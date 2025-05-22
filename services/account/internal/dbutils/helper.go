@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/ashish19912009/zrms/services/account/internal/constants"
 	"github.com/ashish19912009/zrms/services/account/internal/logger"
@@ -69,11 +70,11 @@ func ExecuteAndScanRow(
 		logger.Error("failed to map struct for scanning", err, logCtx)
 		return err
 	}
-
+	fmt.Printf("Scan targets: %+v\n", scanTargets)
 	// Perform the initial scan
 	if err := row.Scan(scanTargets...); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
+		if errors.Is(err, sql.ErrNoRows) {
+			return sql.ErrNoRows
 		}
 		logCtx := logger.BaseLogContext("layer", constants.Repository, "method", methodName)
 		logger.Error(constants.FailedToRetrv, err, logCtx)
@@ -312,6 +313,18 @@ func MapValuesDirect(input any, columns []string, tag string) ([]any, error) {
 		fieldIndex, ok := tagToIndex[col]
 		if !ok {
 			return nil, fmt.Errorf("tag '%s' not found in struct", col)
+		}
+		field := v.Field(fieldIndex)
+		// Special handling for time.Time
+		if field.Type() == reflect.TypeOf(time.Time{}) {
+			timeValue := field.Interface().(time.Time)
+			if !timeValue.IsZero() {
+				values[i] = timeValue
+			} else {
+				values[i] = nil // Use NULL for zero time
+			}
+		} else {
+			values[i] = field.Interface()
 		}
 		values[i] = v.Field(fieldIndex).Interface()
 	}

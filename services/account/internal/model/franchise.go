@@ -136,16 +136,16 @@ type FranchiseAddressResponse struct {
 }
 
 type FranchiseOwner struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Gender     string `json:"gender"`
-	Dob        string `json:"dob"`
-	MobileNo   string `json:"mobile_no"`
-	Email      string `json:"email"`
-	Address    string `json:"address"`
-	AadharNo   string `json:"aadhar_no"`
-	IsVerified bool   `json:"is_verified"`
-	Status     string `json:"status"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Gender     string    `json:"gender"`
+	Dob        time.Time `json:"dob"`
+	MobileNo   string    `json:"mobile_no"`
+	Email      string    `json:"email"`
+	Address    string    `json:"address"`
+	AadharNo   string    `json:"aadhar_no"`
+	IsVerified bool      `json:"is_verified"`
+	Status     string    `json:"status"`
 }
 
 type FranchiseOwnerResponse struct {

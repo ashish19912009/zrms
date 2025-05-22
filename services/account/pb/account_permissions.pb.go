@@ -18,7 +18,7 @@ func init() {
 	permissions.Register("/account.AccountService/CreateFranchiseAddress", "franchiseAddress", "create")
 	permissions.Register("/account.AccountService/GetFranchiseAddressByID", "franchiseAddress", "view")
 	permissions.Register("/account.AccountService/UpdateFranchiseAddressByID", "franchiseAddress", "update")
-	permissions.Register("/account.AccountService/CreateFranchiseOwner", "franchiseOwner", "create")
+	permissions.Register("/account.AccountService/CreateNewOwner", "franchiseOwner", "create")
 	permissions.Register("/account.AccountService/UpdateFranchiseOwnerByID", "franchiseOwner", "update")
 	permissions.Register("/account.AccountService/GetFranchiseOwnerByID", "franchiseOwner", "view")
 	permissions.Register("/account.AccountService/CheckIfOwnerExistsByAadharID", "franchiseOwner", "view")
